@@ -13,6 +13,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+menv/
 
 # Config Files #
 config.py
