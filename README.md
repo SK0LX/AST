@@ -1,23 +1,50 @@
-# 🚀 AutoGraph: Автоматический Снайпинг Токенов  
+# AutoGraph: Automatic Token Sniping  
 
-## 💡 Идея  
-AutoGraph — инструмент для автоматического снайпинга новых токенов с фильтрацией перед покупкой.  
+## Idea  
+AutoGraph is a tool for automatic token sniping with filtering before purchase.  
 
-## 🔧 Функционал  
+## Features  
 
-- 📡 **Мониторинг:** отслеживание новых токенов в реальном времени.  
-- 🚦 **Фильтрация:** черный список, лимиты на цену и транзакции.  
-- 🤖 **Автоматизация:** покупка, холд, продажа по стратегии.  
-- 📩 **Уведомления:** Telegram, Android-приложение.  
-- 📊 **Логирование:** анализ эффективности сделок.  
+- **Monitoring** — tracks new tokens in real time.  
+- **Filtering** — blacklist, price limits, and transaction limits.  
+- **Automation** — buy, hold, and sell based on strategy.  
+- **Notifications** — Telegram, Android app.  
+- **Logging** — analyzes trade efficiency.  
 
-## 📈 Развитие  
+## Architecture  
 
-- 🛠 **MVP:** запуск с базовыми фильтрами.  
-- 🔍 **Дальше:** анализ ликвидности, защита от скама.  
+### Core (JavaScript)  
+- Processes incoming token streams.  
+- Sends data for filtering.  
+- Stores results in PostgreSQL.  
 
-## ✅ Почему это работает  
+### Web Admin Panel (JavaScript)  
+- Moderation interface: accept, reject, edit.  
+- Settings: data sources, filtering.  
 
-✔️ Быстрее и точнее ручной торговли.  
-✔️ Фильтры снижают риски.  
-✔️ Статистика адаптирует стратегию.  
+### Telegram Bot (Python)  
+- Management via commands and buttons.  
+
+### Mathematical Statistics (Python)  
+- Trade analysis.  
+- Strategy efficiency evaluation.  
+
+### Android App (Kotlin)  
+- Notifications.  
+- Monitoring.  
+
+### Database (PostgreSQL)  
+- Stores token and transaction data.  
+- Logs user actions.  
+- Filtering metadata.  
+
+## Roadmap  
+
+- **MVP** — launch with basic filtering.  
+- **Further development** — liquidity analysis, scam protection.  
+
+## Why It Works  
+
+- Faster and more accurate than manual trading.  
+- Filters reduce risks.  
+- Statistics help adapt strategy.  
