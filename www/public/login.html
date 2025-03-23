@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AST - Login Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2332CD32' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Ccircle cx='12' cy='12' r='6'/%3E%3Ccircle cx='12' cy='12' r='2'/%3E%3Cpath d='M12 2v4'/%3E%3Cpath d='M12 18v4'/%3E%3Cpath d='M2 12h4'/%3E%3Cpath d='M18 12h4'/%3E%3C/svg%3E">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+        body.dark {
+            background-color: #0a0a0a;
+            color: #e5e7eb;
+        }
+        body.dark .divider::before,
+        body.dark .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background-color: #2d2d2d;
+        }
+        body.dark .social-button {
+            background-color: #0a0a0a;
+            border: 1px solid #2d2d2d;
+            color: #e5e7eb;
+            flex: 1;
+        }
+        body.dark .social-button:hover {
+            background-color: #2d2d2d;
+        }
+        body.dark .email-input {
+            background-color: #0a0a0a;
+            border: 1px solid #2d2d2d;
+            color: #e5e7eb;
+        }
+        body.dark .email-input::placeholder {
+            color: #6b7280;
+        }
+        body.dark .email-button {
+            background-color: #2d2d2d;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+        body.dark .email-button.enabled {
+            background-color: #ffffff;
+            color: #000000;
+            cursor: pointer;
+        }
+        body.dark .email-button.enabled:hover {
+            background-color: #e5e5e5;
+        }
+        body.dark .logo {
+            color: #ffffff;
+        }
+        body.dark .description {
+            color: #9ca3af;
+        }
+        body.dark .divider {
+            color: #6b7280;
+        }
+        body.dark .label {
+            color: #9ca3af;
+        }
+        body.dark .otp-modal {
+            background-color: #1a1a1a;
+            border: 1px solid #2d2d2d;
+        }
+        body.dark .otp-input {
+            background-color: #1a1a1a;
+            border: 0.5px solid #2d2d2d;
+            color: #e5e7eb;
+        }
+        body.dark .otp-signin-button {
+            background-color: #2d2d2d;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+        body.dark .otp-signin-button.enabled {
+            background-color: #ffffff;
+            color: #000000;
+            cursor: pointer;
+        }
+        body.dark .otp-signin-button.enabled:hover {
+            background-color: #e5e5e5;
+        }
+        body.dark .otp-back {
+            color: #e5e7eb;
+        }
+        body.dark .otp-email {
+            color: #ffffff;
+        }
+        body.dark .otp-resend {
+            color: #9ca3af;
+        }
+        body.dark .otp-resend.active {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+        body.light {
+            background-color: #ffffff;
+            color: #000000;
+        }
+        body.light .divider::before,
+        body.light .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background-color: #e5e7eb;
+        }
+        body.light .social-button {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            color: #000000;
+            flex: 1;
+        }
+        body.light .social-button:hover {
+            background-color: #f3f4f6;
+        }
+        body.light .email-input {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            color: #000000;
+        }
+        body.light .email-input::placeholder {
+            color: #9ca3af;
+        }
+        body.light .email-button {
+            background-color: #f3f4f6;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+        body.light .email-button.enabled {
+            background-color: #000000;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+        }
+        body.light .email-button.enabled:hover {
+            background-color: #333333;
+        }
+        body.light .logo {
+            color: #000000;
+        }
+        body.light .description {
+            color: #6b7280;
+        }
+        body.light .divider {
+            color: #9ca3af;
+        }
+        body.light .label {
+            color: #6b7280;
+        }
+        body.light .otp-modal {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+        }
+        body.light .otp-input {
+            background-color: #ffffff;
+            border: 0.5px solid #e5e7eb;
+            color: #000000;
+        }
+        body.light .otp-signin-button {
+            background-color: #f3f4f6;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+        body.light .otp-signin-button.enabled {
+            background-color: #000000;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+        }
+        body.light .otp-signin-button.enabled:hover {
+            background-color: #333333;
+        }
+        body.light .otp-back {
+            color: #000000;
+        }
+        body.light .otp-email {
+            color: #000000;
+        }
+        body.light .otp-resend {
+            color: #6b7280;
+        }
+        body.light .otp-resend.active {
+            color: #000000;
+            text-decoration: underline;
+        }
+        .top-bar {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            right: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+        }
+        .otp-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 24rem; /* Default width for OTP modal */
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        #terms-modal {
+            width: 32rem; /* Wider for Terms modal */
+        }
+        .otp-modal.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        .otp-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .otp-overlay.visible {
+            opacity: 1;
+        }
+        .main-content {
+            transition: filter 0.3s ease;
+        }
+        .main-content.blurred {
+            filter: blur(4px);
+        }
+        .otp-header {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .otp-back {
+            position: absolute;
+            left: 0;
+        }
+        .otp-input {
+            width: 3rem;
+            height: 3rem;
+            text-align: center;
+            font-size: 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+        }
+        .otp-signin-button {
+            position: relative;
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition-colors: all 0.3s ease;
+        }
+        .otp-signin-button svg {
+            position: absolute;
+            right: 1rem;
+        }
+        .otp-resend {
+            font-size: 0.875rem;
+            text-decoration: none;
+        }
+        .otp-email {
+            font-weight: 600;
+        }
+        .social-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+        .custom-checkbox {
+            appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #000000;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        body.dark .custom-checkbox {
+            border: 2px solid #e5e7eb;
+        }
+        .custom-checkbox:checked {
+            background-color: #000000;
+            border-color: #000000;
+            position: relative;
+        }
+        body.dark .custom-checkbox:checked {
+            background-color: #ffffff;
+            border-color: #ffffff;
+        }
+        .custom-checkbox:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0.5rem;
+            height: 0.75rem;
+            border: solid #ffffff;
+            border-width: 0 2px 2px 0;
+            transform: translate(-50%, -60%) rotate(45deg);
+        }
+        body.light .custom-checkbox:checked::after {
+            border-color: #ffffff;
+        }
+        body.dark .custom-checkbox:checked::after {
+            border-color: #000000;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center">
+    <div class="top-bar">
+        <div class="header">
+            <svg class="h-8 w-8 logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="6"/>
+                <circle cx="12" cy="12" r="2"/>
+                <path d="M12 2v4"/>
+                <path d="M12 18v4"/>
+                <path d="M2 12h4"/>
+                <path d="M18 12h4"/>
+            </svg>
+            <span class="text-xl font-semibold">AST</span>
+        </div>
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <svg id="theme-icon" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M21.4 13.7C20.6 13.9 19.8 14 19 14c-5 0-9-4-9-9 0-.8.1-1.6.3-2.4-4.2 1.1-7.3 4.9-7.3 9.4 0 5.5 4.5 10 10 10 4.5 0 8.3-3 9.4-7.3z"/>
+            </svg>
+        </button>
+    </div>
+    <div class="main-content max-w-sm w-full space-y-6 text-center">
+        <h2 class="text-3xl font-semibold">Log in</h2>
+
+        <p class="text-sm description">
+            Enter your email below to log in to your account, or continue with a social provider.
+        </p>
+
+        <div class="social-buttons">
+            <button class="flex items-center justify-center gap-2 px-4 py-2 social-button rounded-md transition-colors">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.083-.729.083-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+                </svg>
+                Github
+            </button>
+            <button class="flex items-center justify-center gap-2 px-4 py-2 social-button rounded-md transition-colors">
+                <span class="text-lg">G</span>
+                Google
+            </button>
+        </div>
+
+        <div class="divider flex items-center gap-2 text-xs uppercase">
+            <span>Or continue with</span>
+        </div>
+
+        <div class="space-y-3">
+            <label class="label block text-left text-sm font-medium">Email</label>
+            <input
+                type="email"
+                placeholder="m@example.com"
+                class="w-full px-3 py-2 email-input rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                required
+                id="email-input"
+            >
+            <button
+                class="w-full px-4 py-2 email-button rounded-md transition-colors"
+                id="login-button"
+                disabled
+                onclick="showOtpModal()"
+            >
+                Log in with Email
+            </button>
+            <div class="flex items-center justify-center gap-2">
+                <input type="checkbox" id="terms-checkbox" class="custom-checkbox">
+                <label for="terms-checkbox" class="text-sm label">I agree to the</label>
+                <button onclick="showTermsModal()" class="text-sm underline label hover:text-gray-500">Terms of Service</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="otp-overlay" class="otp-overlay hidden"></div>
+    <div id="otp-modal" class="otp-modal hidden">
+        <div class="otp-header">
+            <button class="otp-back" onclick="hideOtpModal()">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 18l-6-6 6-6"/>
+                </svg>
+            </button>
+            <h3 class="text-lg font-semibold">Sign in</h3>
+        </div>
+        <p class="text-sm description mb-4">
+            Enter the code we just sent to <span id="otp-email" class="otp-email"></span>
+        </p>
+        <div class="flex justify-center gap-3 mb-4">
+            <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 1)">
+            <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 2)">
+            <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 3)">
+            <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 4)">
+            <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 5)">
+            <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 6)">
+        </div>
+        <div class="flex justify-center mb-4">
+            <a href="#" class="otp-resend" id="resend-link" onclick="resendCode()">Resend (<span id="resend-timer">2:00</span>)</a>
+        </div>
+        <button class="otp-signin-button" id="otp-signin-button" disabled onclick="verifyOtp()">
+            <span>Sign in</span>
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14m-4-4l4 4-4 4"/>
+            </svg>
+        </button>
+    </div>
+
+    <div id="terms-overlay" class="otp-overlay hidden"></div>
+    <div id="terms-modal" class="otp-modal hidden">
+        <div class="otp-header">
+            <button class="otp-back" onclick="hideTermsModal()">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 18l-6-6 6-6"/>
+                </svg>
+            </button>
+            <h3 class="text-xl font-semibold">Disclaimer: Terms of Service</h3>
+        </div>
+        <div class="text-base description mb-4 max-h-72 overflow-y-auto">
+            <p>This software is open source and provided "as is". No guarantees of profit or functionality are given. You are solely responsible for all risks, taxes, and legal compliance. I do not manage your funds; I only provide a tool for swaps on Pump.fun via a trusted contract. AML risks are your responsibility. The key is stored in RAM and not saved. Profit share in SOL (if applicable) is a fee for the software, transferred manually by you. By using it, you accept all terms.</p>
+        </div>
+        <button class="otp-signin-button enabled" onclick="hideTermsModal()">
+            <span>Close</span>
+        </button>
+    </div>
+
+    <script>
+        const emailInput = document.getElementById('email-input');
+        const loginButton = document.getElementById('login-button');
+        const themeIcon = document.getElementById('theme-icon');
+        const otpOverlay = document.getElementById('otp-overlay');
+        const otpModal = document.getElementById('otp-modal');
+        const otpEmail = document.getElementById('otp-email');
+        const otpInputs = document.querySelectorAll('.otp-input');
+        const otpSigninButton = document.getElementById('otp-signin-button');
+        const resendTimer = document.getElementById('resend-timer');
+        const resendLink = document.getElementById('resend-link');
+        const mainContent = document.querySelector('.main-content');
+        const termsCheckbox = document.getElementById('terms-checkbox');
+        const termsOverlay = document.getElementById('terms-overlay');
+        const termsModal = document.getElementById('terms-modal');
+        let timerSeconds = 120;
+        let timerInterval;
+
+        // Функция для установки темы
+        function setTheme(theme) {
+            const body = document.body;
+            if (theme === 'dark') {
+                body.classList.remove('light');
+                body.classList.add('dark');
+                themeIcon.innerHTML = `
+                    <path d="M21.4 13.7C20.6 13.9 19.8 14 19 14c-5 0-9-4-9-9 0-.8.1-1.6.3-2.4-4.2 1.1-7.3 4.9-7.3 9.4 0 5.5 4.5 10 10 10 4.5 0 8.3-3 9.4-7.3z"/>
+                `;
+            } else {
+                body.classList.remove('dark');
+                body.classList.add('light');
+                themeIcon.innerHTML = `
+                    <circle cx="12" cy="12" r="4"/>
+                    <circle cx="12" cy="4" r="1"/>
+                    <circle cx="12" cy="20" r="1"/>
+                    <circle cx="4" cy="12" r="1"/>
+                    <circle cx="20" cy="12" r="1"/>
+                    <circle cx="6.34" cy="6.34" r="1"/>
+                    <circle cx="17.66" cy="17.66" r="1"/>
+                    <circle cx="6.34" cy="17.66" r="1"/>
+                    <circle cx="17.66" cy="6.34" r="1"/>
+                `;
+            }
+        }
+
+        // Функция для переключения темы
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.classList.contains('dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // Загрузка сохранённой темы при загрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            setTheme(savedTheme);
+        });
+
+        function validateEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        // Проверка состояния email и чекбокса для активации кнопки логина
+        function updateLoginButtonState() {
+            const email = emailInput.value;
+            const termsAgreed = termsCheckbox.checked;
+            if (validateEmail(email) && termsAgreed) {
+                loginButton.disabled = false;
+                loginButton.classList.add('enabled');
+            } else {
+                loginButton.disabled = true;
+                loginButton.classList.remove('enabled');
+            }
+        }
+
+        emailInput.addEventListener('input', updateLoginButtonState);
+        termsCheckbox.addEventListener('change', updateLoginButtonState);
+
+        function showOtpModal() {
+            const email = emailInput.value;
+            if (validateEmail(email) && termsCheckbox.checked) {
+                otpEmail.textContent = email;
+                otpOverlay.classList.remove('hidden');
+                otpOverlay.classList.add('visible');
+                otpModal.classList.remove('hidden');
+                otpModal.classList.add('visible');
+                mainContent.classList.add('blurred');
+                startResendTimer();
+                otpInputs[0].focus();
+            }
+        }
+
+        function hideOtpModal() {
+            otpOverlay.classList.remove('visible');
+            otpOverlay.classList.add('hidden');
+            otpModal.classList.remove('visible');
+            otpModal.classList.add('hidden');
+            mainContent.classList.remove('blurred');
+            otpInputs.forEach(input => input.value = '');
+            otpSigninButton.disabled = true;
+            otpSigninButton.classList.remove('enabled');
+            clearInterval(timerInterval);
+            timerSeconds = 120;
+            resendTimer.textContent = '2:00';
+            resendLink.classList.remove('active');
+        }
+
+        function showTermsModal() {
+            termsOverlay.classList.remove('hidden');
+            termsOverlay.classList.add('visible');
+            termsModal.classList.remove('hidden');
+            termsModal.classList.add('visible');
+            mainContent.classList.add('blurred');
+        }
+
+        function hideTermsModal() {
+            termsOverlay.classList.remove('visible');
+            termsOverlay.classList.add('hidden');
+            termsModal.classList.remove('visible');
+            termsModal.classList.add('hidden');
+            mainContent.classList.remove('blurred');
+        }
+
+        function moveToNext(current, nextIndex) {
+            const value = current.value;
+            if (!/^[0-9]$/.test(value)) {
+                current.value = '';
+                return;
+            }
+            if (value.length === 1 && nextIndex < otpInputs.length) {
+                otpInputs[nextIndex].focus();
+            }
+            const otpCode = Array.from(otpInputs).map(input => input.value).join('');
+            if (otpCode.length === 6) {
+                otpSigninButton.disabled = false;
+                otpSigninButton.classList.add('enabled');
+            } else {
+                otpSigninButton.disabled = true;
+                otpSigninButton.classList.remove('enabled');
+            }
+        }
+
+        function startResendTimer() {
+            timerInterval = setInterval(() => {
+                timerSeconds--;
+                const minutes = Math.floor(timerSeconds / 60);
+                const seconds = timerSeconds % 60;
+                resendTimer.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                if (timerSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    resendLink.classList.add('active');
+                }
+            }, 1000);
+        }
+
+        function resendCode() {
+            if (timerSeconds <= 0) {
+                timerSeconds = 120;
+                resendTimer.textContent = '2:00';
+                resendLink.classList.remove('active');
+                startResendTimer();
+                otpInputs.forEach(input => input.value = '');
+                otpSigninButton.disabled = true;
+                otpSigninButton.classList.remove('enabled');
+                alert('Code resent!');
+            }
+        }
+
+        function verifyOtp() {
+            const otpCode = Array.from(otpInputs).map(input => input.value).join('');
+            if (otpCode.length === 6) {
+                alert(`Verifying OTP: ${otpCode}`);
+                hideOtpModal();
+            }
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                if (!otpModal.classList.contains('hidden')) {
+                    hideOtpModal();
+                } else if (!termsModal.classList.contains('hidden')) {
+                    hideTermsModal();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

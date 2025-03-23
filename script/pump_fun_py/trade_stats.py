@@ -88,15 +88,15 @@ def generate_times():
     buy_delay = random.choice(buy_delay_values)
     sell_delay = random.choice(sell_delay_values)
 
-    buy_delay = 0
-    sell_delay = 30
+    buy_delay = 10
+    sell_delay = 20
 
     return  buy_delay, sell_delay
 
 def generate_price(price):
-    step = 0.2e-08
+    step = 0.1e-08
     min_price = (price // step) * step
-    max_price = min_price + 0.2e-08
+    max_price = min_price + 0.1e-08
 
     return min_price, max_price
 

@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AST - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tweetnacl@1.0.3/nacl.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2332CD32' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Ccircle cx='12' cy='12' r='6'/%3E%3Ccircle cx='12' cy='12' r='2'/%3E%3Cpath d='M12 2v4'/%3E%3Cpath d='M12 18v4'/%3E%3Cpath d='M2 12h4'/%3E%3Cpath d='M18 12h4'/%3E%3C/svg%3E">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Темная тема */
+        body.dark {
+            background-color: #0a0a0a;
+            color: #e5e7eb;
+        }
+        body.dark .logo { color: #ffffff; }
+        body.dark .description { color: #9ca3af; }
+        body.dark .nav-link { 
+            color: #9ca3af; 
+            text-transform: uppercase; 
+            font-size: 0.875rem; 
+            font-weight: 500; 
+        }
+        body.dark .nav-link:hover { color: #ffffff; }
+        body.dark .nav-link.active { 
+            color: #ffffff; 
+            font-weight: 600; 
+        }
+        body.dark .card { 
+            background-color: #0a0a0a; 
+            border: 1px solid #2d2d2d; 
+            border-radius: 0.5rem; 
+        }
+        body.dark .status-dot { 
+            background-color: #2d2d2d; 
+            border-radius: 9999px; 
+            padding: 0.25rem 0.75rem; 
+            display: flex; 
+            align-items: center; 
+            gap: 0.5rem; 
+        }
+        body.dark .status-dot.connected { color: #32CD32; }
+        body.dark .status-dot.connecting { color: #FFA500; }
+        body.dark .status-dot.offline { color: #FF4500; }
+        body.dark .highlight { 
+            color: #32CD32; 
+            font-weight: 600; 
+        }
+        body.dark .view-nodes-button { 
+            background-color: transparent; 
+            color: #ffffff; 
+            border: 1px solid #ffffff; 
+            border-radius: 0.5rem; 
+            font-weight: 500; 
+            text-transform: uppercase; 
+            transition: background-color 0.3s ease; 
+        }
+        body.dark .view-nodes-button:hover { 
+            background-color: #2d2d2d; 
+        }
+        body.dark .time-block { color: #e5e7eb; }
+        body.dark .time-block .label { 
+            color: #9ca3af; 
+            font-size: 0.875rem; 
+        }
+        body.dark .time-block .value { 
+            font-size: 1.25rem; 
+            font-weight: 500; 
+            white-space: nowrap; 
+        }
+        body.dark .uptime-graph { 
+            background-color: #0a0a0a; 
+            border: 1px solid #2d2d2d; 
+            border-radius: 0.5rem; 
+            margin-top: 1.5rem; 
+        }
+        body.dark .uptime-graph canvas { 
+            max-height: 200px; 
+            width: 100%; 
+        }
+        body.dark .legend-container { 
+            display: flex; 
+            justify-content: center; 
+            gap: 1rem; 
+            margin-top: 1rem; 
+        }
+        body.dark .legend-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 0.5rem; 
+            font-size: 0.875rem; 
+            color: #9ca3af; 
+        }
+        body.dark .blinking-circle { 
+            animation: blink 1.5s infinite ease-in-out; 
+        }
+        body.dark .time-text { white-space: nowrap; }
+        body.dark .error-message { 
+            color: #FF4500; 
+            font-size: 0.875rem; 
+            margin-top: 0.25rem; 
+        }
+        body.dark .docs-section { padding: 1.5rem; }
+        body.dark .docs-section h4 { color: #32CD32; }
+        body.dark .docs-section p, 
+        body.dark .docs-section li { color: #9ca3af; }
+        body.dark .docs-section .disclaimer-box p { color: #e5e7eb; }
+        body.dark .profile-icon { border: 0px solid #e5e7eb; }
+        body.dark .donate-popup {
+            background-color: #1a1a1a;
+            border: 1px solid #2d2d2d;
+            color: #e5e7eb;
+        }
+        body.dark .donate-popup:hover {
+            background-color: #2d2d2d;
+        }
+        body.dark .wallet-address {
+            color: #32CD32;
+            font-weight: 600;
+        }
+
+        /* Анимация мигания */
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Светлая тема */
+        body.light {
+            background-color: #ffffff;
+            color: #000000;
+        }
+        body.light .logo { color: #000000; }
+        body.light .description { color: #6b7280; }
+        body.light .nav-link { 
+            color: #6b7280; 
+            text-transform: uppercase; 
+            font-size: 0.875rem; 
+            font-weight: 500; 
+        }
+        body.light .nav-link:hover { color: #000000; }
+        body.light .nav-link.active { 
+            color: #000000; 
+            font-weight: 600; 
+        }
+        body.light .card { 
+            background-color: #ffffff; 
+            border: 1px solid #e5e7eb; 
+            border-radius: 0.5rem; 
+        }
+        body.light .status-dot { 
+            background-color: #e5e7eb; 
+            border-radius: 9999px; 
+            padding: 0.25rem 0.75rem; 
+            display: flex; 
+            align-items: center; 
+            gap: 0.5rem; 
+        }
+        body.light .status-dot.connected { color: #32CD32; }
+        body.light .status-dot.connecting { color: #FFA500; }
+        body.light .status-dot.offline { color: #FF4500; }
+        body.light .highlight { 
+            color: #32CD32; 
+            font-weight: 600; 
+        }
+        body.light .view-nodes-button { 
+            background-color: transparent; 
+            color: #000000; 
+            border: 1px solid #000000; 
+            border-radius: 0.5rem; 
+            font-weight: 500; 
+            text-transform: uppercase; 
+            transition: background-color 0.3s ease; 
+        }
+        body.light .view-nodes-button:hover { 
+            background-color: #e5e7eb; 
+        }
+        body.light .time-block { color: #000000; }
+        body.light .time-block .label { 
+            color: #6b7280; 
+            font-size: 0.875rem; 
+        }
+        body.light .time-block .value { 
+            font-size: 1.25rem; 
+            font-weight: 500; 
+            white-space: nowrap; 
+        }
+        body.light .uptime-graph { 
+            background-color: #ffffff; 
+            border: 1px solid #e5e7eb; 
+            border-radius: 0.5rem; 
+            margin-top: 1.5rem; 
+        }
+        body.light .uptime-graph canvas { 
+            max-height: 200px; 
+            width: 100%; 
+        }
+        body.light .legend-container { 
+            display: flex; 
+            justify-content: center; 
+            gap: 1rem; 
+            margin-top: 1rem; 
+        }
+        body.light .legend-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 0.5rem; 
+            font-size: 0.875rem; 
+            color: #6b7280; 
+        }
+        body.light .blinking-circle { 
+            animation: blink 1.5s infinite ease-in-out; 
+        }
+        body.light .time-text { white-space: nowrap; }
+        body.light .error-message { 
+            color: #FF4500; 
+            font-size: 0.875rem; 
+            margin-top: 0.25rem; 
+        }
+        body.light .docs-section { padding: 1.5rem; }
+        body.light .docs-section h4 { color: #32CD32; }
+        body.light .docs-section p, 
+        body.light .docs-section li { color: #6b7280; }
+        body.light .docs-section .disclaimer-box p { color: #000000; }
+        body.light .profile-icon { border: 1px solid #6b7280; }
+        body.light .donate-popup {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            color: #000000;
+        }
+        body.light .donate-popup:hover {
+            background-color: #f3f4f6;
+        }
+        body.light .wallet-address {
+            color: #32CD32;
+            font-weight: 600;
+        }
+
+        /* Общие стили */
+        .top-bar {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            right: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .nav-menu {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+        }
+        .profile-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .profile-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 2rem;
+            height: calc(100% + 0.5rem);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .profile-container:hover::before {
+            pointer-events: auto;
+        }
+
+        .profile-icon {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            object-fit: cover;
+            cursor: pointer;
+            position: relative;
+            z-index: 10;
+        }
+
+        .donate-popup {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            font-size: 0.875rem;
+            font-weight: 500;
+            opacity: 0;
+            visibility: hidden;
+            z-index: 10;
+            cursor: pointer;
+            transition: opacity 0.3s ease-in-out, background-color 0.2s ease;
+            white-space: nowrap;
+            max-width: 32rem;
+        }
+
+        .profile-container:hover .donate-popup {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 200px;
+            width: 100%;
+        }
+        .content-container {
+            padding-top: 4rem;
+        }
+
+        /* Медиа-запросы для адаптивности */
+        @media (max-width: 640px) {
+            .content-container {
+                padding-top: 3rem;
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            .nav-menu {
+                gap: 1rem;
+            }
+            .nav-link {
+                font-size: 0.75rem;
+            }
+            .top-bar {
+                top: 0.5rem;
+                left: 0.5rem;
+                right: 0.5rem;
+            }
+            .header span {
+                font-size: 1rem;
+            }
+            .header svg {
+                height: 1.5rem;
+                width: 1.5rem;
+            }
+            .profile-icon {
+                width: 1.5rem;
+                height: 1.5rem;
+            }
+            .theme-toggle svg {
+                height: 1.25rem;
+                width: 1.25rem;
+            }
+            .donate-popup {
+                font-size: 0.75rem;
+                padding: 0.5rem 0.75rem;
+                max-width: 20rem;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <div class="top-bar">
+        <div class="header">
+            <svg class="h-8 w-8 logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="6"/>
+                <circle cx="12" cy="12" r="2"/>
+                <path d="M12 2v4"/>
+                <path d="M12 18v4"/>
+                <path d="M2 12h4"/>
+                <path d="M18 12h4"/>
+            </svg>
+            <span class="text-xl font-semibold">AST</span>
+        </div>
+        <div class="nav-menu">
+            <a href="#" class="nav-link" data-page="dash">Dashboard</a>
+            <a href="#" class="nav-link" data-page="wallets">Wallets</a>
+            <a href="#" class="nav-link" data-page="docs">Docs</a>
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <svg id="theme-icon" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M21.4 13.7C20.6 13.9 19.8 14 19 14c-5 0-9-4-9-9 0-.8.1-1.6.3-2.4-4.2 1.1-7.3 4.9-7.3 9.4 0 5.5 4.5 10 10 10 4.5 0 8.3-3 9.4-7.3z"/>
+                </svg>
+            </button>
+            <div class="profile-container">
+                <img class="profile-icon" src="user.webp" alt="User Profile">
+                <div class="donate-popup" onclick="copyDonateAddress(event)">
+                    Donate Wallet: <span class="wallet-address">q4tqEU7BJ7GNkazQAKci7X1DBPj8jRzWyFpn6TzZBpe</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="flex-1 flex items-center justify-center">
+        <div class="content-container max-w-4xl w-full space-y-6 px-4">
+            <h2 class="text-3xl font-semibold" id="page-title">Dashboard</h2>
+
+            <!-- Dashboard Content -->
+            <div id="dash-content" class="page-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Wallet Management Card -->
+                    <div class="card p-6 space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold">Asset Vault</h3>
+                            <div class="flex items-center gap-4">
+                                <span id="status-dot" class="status-dot connected flex items-center gap-2">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                                        <circle cx="12" cy="12" r="6"/>
+                                    </svg>
+                                    Active
+                                </span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="bot-toggle" class="sr-only peer" checked onchange="toggleBotStatus(this)">
+                                    <div class="w-11 h-6 bg-[#2d2d2d] rounded-full peer peer-checked:bg-[#eee] transition-all duration-300 ease-in-out"></div>
+                                    <div class="absolute left-1 top-1 w-4 h-4 bg-white peer-checked:bg-[#0a0a0a] rounded-full transition-all duration-300 ease-in-out peer-checked:translate-x-5"></div>
+                                </label>
+                            </div>
+                        </div>
+                        <p class="text-sm description">
+                            Manage your Solana wallet for token sniping.
+                        </p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                    <span class="font-medium">Balance</span>
+                                </div>
+                                <div class="pl-7">
+                                    <p class="text-lg font-semibold highlight">12.45 SOL</p>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                    <span class="font-medium">Wallet Address</span>
+                                </div>
+                                <div class="pl-7">
+                                    <p class="text-sm description" id="public-key-display">7x9K...6aF2</p>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                    <span class="font-medium">Private Key</span>
+                                </div>
+                                <div class="pl-7">
+                                    <p class="text-sm description" id="private-key-display">**** **** **** 6aF2</p>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                    <span class="font-medium">Position Size</span>
+                                </div>
+                                <div class="pl-7">
+                                    <p class="text-lg font-semibold" id="position-size-display">25%</p>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="w-full py-2 view-nodes-button" onclick="setActivePage('wallets')">
+                            Edit Settings
+                        </button>
+                    </div>
+
+                    <!-- Trade Statistics Card -->
+                    <div class="card p-6 space-y-4">
+                        <h3 class="text-lg font-semibold">Trade Statistics</h3>
+                        <p class="text-sm description">
+                            Overview of your sniping activity.
+                        </p>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl font-semibold highlight">78% Success Rate</span>
+                            <svg class="h-4 w-4 blinking-circle" viewBox="0 0 24 24" fill="#32CD32">
+                                <circle cx="12" cy="12" r="6"/>
+                            </svg>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4 text-center">
+                            <div class="time-block">
+                                <p class="label">Trades Today</p>
+                                <p class="value">14</p>
+                            </div>
+                            <div class="time-block">
+                                <p class="label">Trades Hourly</p>
+                                <p class="value">2</p>
+                            </div>
+                            <div class="time-block">
+                                <p class="label">Total Trades</p>
+                                <p class="value">156</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PNL Graph -->
+                <div class="uptime-graph p-6">
+                    <h3 class="text-lg font-semibold">PNL Performance</h3>
+                    <p class="text-sm description mb-4">
+                        Your profit/loss in percentage over the last 14 days.
+                    </p>
+                    <div class="chart-container">
+                        <canvas id="uptimeChart"></canvas>
+                    </div>
+                    <div class="legend-container">
+                        <div class="legend-item">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="rgba(46, 125, 50, 0.9)">
+                                <circle cx="12" cy="12" r="6"/>
+                            </svg>
+                            Profit
+                        </div>
+                        <div class="legend-item">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="rgba(211, 47, 47, 0.9)">
+                                <circle cx="12" cy="12" r="6"/>
+                            </svg>
+                            Loss
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wallets Content -->
+            <div id="wallets-content" class="page-content hidden">
+                <div class="card p-6 space-y-4">
+                    <h3 class="text-lg font-semibold">Wallet Settings</h3>
+                    <p class="text-sm description">
+                        Manage your Solana wallets and sniping preferences.
+                    </p>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium">Private Key</label>
+                            <input type="text" id="private-key-input" value="5EBpFWyjf218pZoJ6PM498jGKbAXxkP6jHXfs9rPkDpEmBAFgbWnbS9gHe7NreUR6yCyLRdgUrc6STvRazZpbLKQ" class="w-full mt-1 p-2 bg-transparent border border-gray-600 rounded">
+                            <p id="private-key-error" class="error-message hidden">Invalid Solana private key.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium">Primary Wallet Address</label>
+                            <input type="text" id="public-key-input" value="7x9K...6aF2" class="w-full mt-1 p-2 bg-transparent border border-gray-600 rounded" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium">Position Size (%)</label>
+                            <input type="number" id="position-size-input" value="25" class="w-full mt-1 p-2 bg-transparent border border-gray-600 rounded">
+                            <p id="position-size-error" class="error-message hidden">Position Size must be between 2% and 50%.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium">Slippage Tolerance (%)</label>
+                            <input type="number" id="slippage-tolerance-input" value="2" step="0.1" class="w-full mt-1 p-2 bg-transparent border border-gray-600 rounded">
+                            <p id="slippage-tolerance-error" class="error-message hidden">Slippage Tolerance must be between 1% and 10%.</p>
+                        </div>
+                        <button class="w-full py-2 view-nodes-button" onclick="saveWalletSettings()">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Docs Content -->
+            <div id="docs-content" class="page-content hidden">
+                <div class="card p-6 space-y-4">
+                    <div class="space-y-6 docs-section">
+                        <div>
+                            <h4 class="text-md font-semibold">Overview</h4>
+                            <p class="text-sm description">
+                                The Automatic Sniper Tool (AST) is designed to empower users to snipe newly launched tokens on the Solana blockchain with precision and speed. By leveraging an on-chain scanner and a machine learning (ML) model, AST identifies and filters tokens with positive expected value, enabling users to capitalize on early opportunities.
+                            </p>
+                        </div>
+                        <div>
+                            <h4 class="text-md font-semibold">Core Objective</h4>
+                            <p class="text-sm description">
+                                AST automates the process of sniping new tokens on Solana by scanning the blockchain in real-time and using an ML model to predict token potential, ensuring users can act swiftly and efficiently.
+                            </p>
+                        </div>
+                        <div>
+                            <h4 class="text-md font-semibold">Architecture</h4>
+                            <ul class="text-sm description list-disc list-inside space-y-2">
+                                <li><strong>Blockchain Scanner:</strong> A server-side script continuously scans the Solana blockchain via API requests to nodes, detecting new token launches.</li>
+                                <li><strong>ML Model:</strong> An integrated machine learning model filters tokens based on their potential for positive mathematical expectation, prioritizing high-value opportunities.</li>
+                                <li><strong>User Interfaces:</strong> Access AST through a web application, an Android app, or a Telegram Mini App, providing flexibility and convenience.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-md font-semibold">User Access & Workflow</h4>
+                            <ul class="text-sm description list-disc list-inside space-y-2">
+                                <li><strong>Authorization:</strong> Users log in to access a dashboard displaying trade logs, wallet balances, and sniping activity.</li>
+                                <li><strong>Private Key Handling:</strong> Your private key is transmitted via a secure protocol, stored only in RAM during operation, and never persisted on disk.</li>
+                                <li><strong>Fund Management:</strong> AST does not custody your funds. Instead, you delegate token management rights to the tool while your assets remain in your wallet.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-md font-semibold">Security & Transparency</h4>
+                            <ul class="text-sm description list-disc list-inside space-y-2">
+                                <li><strong>Open Source:</strong> AST's codebase is fully open source, allowing users to audit and verify its security.</li>
+                                <li><strong>Delegated Control:</strong> Fund management occurs through delegation, ensuring your assets never leave your wallet.</li>
+                                <li><strong>Secure Key Handling:</strong> Private keys are stored in RAM during use and are not saved, minimizing exposure risks.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-md font-semibold">Business Model</h4>
+                            <p class="text-sm description">
+                                For the MVP, AST operates on a profit-sharing model or voluntary donations. A small commission may be applied on profits, ensuring sustainability while keeping the tool accessible.
+                            </p>
+                        </div>
+                        <div>
+                            <h4 class="text-md font-semibold">Competitive Advantage</h4>
+                            <p class="text-sm description">
+                                AST offers lightning-fast token filtering, processing each Solana block in just <span class="highlight">0.4 seconds</span>. This speed ensures you’re among the first buyers, maximizing your chances of securing high-potential tokens before others.
+                            </p>
+                        </div>
+                        <div>
+                            <h4 class="text-md font-semibold">Support</h4>
+                            <p class="text-sm description">
+                                Need assistance? Reach out to our team at <a href="mailto:support@ast.io" class="underline highlight">support@ast.io</a>. We’re here to help you make the most of AST.
+                            </p>
+                        </div>
+                        <div>
+                            <h4 class="text-md font-semibold">Disclaimer & Terms of Use</h4>
+                            <div class="disclaimer-box">
+                                <p class="text-sm">
+                                    This software is open source and provided "as is". No guarantees of profit or functionality are given. You are solely responsible for all risks, taxes, and legal compliance. I do not manage your funds; I only provide a tool for swaps on Pump.fun via a trusted contract. AML risks are your responsibility. The key is stored in RAM and not saved. Profit share in SOL (if applicable) is a fee for the software, transferred manually by you. By using it, you accept all terms.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+        const base58 = {
+            decode: function(string) {
+                const bytes = [0];
+                for (let i = 0; i < string.length; i++) {
+                    const value = BASE58_ALPHABET.indexOf(string[i]);
+                    if (value < 0) throw new Error('Неверный символ в base58 строке');
+                    for (let j = 0; j < bytes.length; j++) bytes[j] *= 58;
+                    bytes[0] += value;
+                    let carry = 0;
+                    for (let j = 0; j < bytes.length; j++) {
+                        carry = (bytes[j] / 256) | 0;
+                        bytes[j] %= 256;
+                        if (carry && j + 1 === bytes.length) bytes.push(0);
+                        if (j + 1 < bytes.length) bytes[j + 1] += carry;
+                    }
+                }
+                while (string[0] === '1' && bytes[bytes.length - 1] === 0) bytes.pop();
+                return Uint8Array.from(bytes.reverse());
+            },
+            encode: function(bytes) {
+                const digits = [0];
+                for (let i = 0; i < bytes.length; i++) {
+                    for (let j = 0; j < digits.length; j++) digits[j] *= 256;
+                    digits[0] += bytes[i];
+                    let carry = 0;
+                    for (let j = 0; j < digits.length; j++) {
+                        carry = (digits[j] / 58) | 0;
+                        digits[j] %= 58;
+                        if (carry && j + 1 === digits.length) digits.push(0);
+                        if (j + 1 < digits.length) digits[j + 1] += carry;
+                    }
+                }
+                let string = '';
+                while (digits[digits.length - 1] === 0) digits.pop();
+                for (let i = digits.length - 1; i >= 0; i--) {
+                    string += BASE58_ALPHABET[digits[i]];
+                }
+                for (let i = 0; i < bytes.length && bytes[i] === 0; i++) string = '1' + string;
+                return string;
+            }
+        };
+
+        function setTheme(theme) {
+            const body = document.body;
+            const themeIcon = document.getElementById('theme-icon');
+            if (theme === 'dark') {
+                body.classList.remove('light');
+                body.classList.add('dark');
+                themeIcon.innerHTML = `
+                    <path d="M21.4 13.7C20.6 13.9 19.8 14 19 14c-5 0-9-4-9-9 0-.8.1-1.6.3-2.4-4.2 1.1-7.3 4.9-7.3 9.4 0 5.5 4.5 10 10 10 4.5 0 8.3-3 9.4-7.3z"/>
+                `;
+            } else {
+                body.classList.remove('dark');
+                body.classList.add('light');
+                themeIcon.innerHTML = `
+                    <circle cx="12" cy="12" r="4"/>
+                    <circle cx="12" cy="4" r="1"/>
+                    <circle cx="12" cy="20" r="1"/>
+                    <circle cx="4" cy="12" r="1"/>
+                    <circle cx="20" cy="12" r="1"/>
+                    <circle cx="6.34" cy="6.34" r="1"/>
+                    <circle cx="17.66" cy="17.66" r="1"/>
+                    <circle cx="6.34" cy="17.66" r="1"/>
+                    <circle cx="17.66" cy="6.34" r="1"/>
+                `;
+            }
+            updateChartTheme(theme);
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.classList.contains('dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        function setActivePage(page) {
+            document.querySelectorAll('.page-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            const activeContent = document.getElementById(`${page}-content`);
+            if (activeContent) {
+                activeContent.classList.remove('hidden');
+            }
+            if (page === 'dash') {
+                document.getElementById('page-title').textContent = 'Dashboard';
+            } else if (page === 'docs') {
+                document.getElementById('page-title').textContent = '';
+            } else {
+                document.getElementById('page-title').textContent = page.charAt(0).toUpperCase() + page.slice(1);
+            }
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('data-page') === page) {
+                    link.classList.add('active');
+                }
+            });
+            localStorage.setItem('activePage', page);
+        }
+
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = link.getAttribute('data-page');
+                setActivePage(page);
+            });
+        });
+
+        function setStatusById(statusId) {
+            const statusDot = document.getElementById('status-dot');
+            if (statusId === 1) {
+                statusDot.className = 'status-dot connected flex items-center gap-2';
+                statusDot.innerHTML = `
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="12" r="6"/>
+                    </svg>
+                    Active
+                `;
+            } else if (statusId === 2) {
+                statusDot.className = 'status-dot connecting flex items-center gap-2';
+                statusDot.innerHTML = `
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="12" r="6"/>
+                    </svg>
+                    Linking
+                `;
+            } else if (statusId === 3) {
+                statusDot.className = 'status-dot offline flex items-center gap-2';
+                statusDot.innerHTML = `
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="12" r="6"/>
+                    </svg>
+                    Inactive
+                `;
+            }
+        }
+
+        function generateRandomPnlData(length, max) {
+            return Array.from({ length }, () => {
+                const value = Math.floor(Math.random() * max) - (max / 2);
+                return value;
+            });
+        }
+
+        function generatePnlColors(data) {
+            return data.map(value => value >= 0 ? 'rgba(46, 125, 50, 0.9)' : 'rgba(211, 47, 47, 0.9)');
+        }
+
+        let chartInstance;
+
+        function updateChartTheme(theme) {
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            const ctx = document.getElementById('uptimeChart').getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            const pnlData = generateRandomPnlData(14, 50); // Оригинальные данные с возможными отрицательными значениями
+            const absolutePnlData = pnlData.map(value => Math.abs(value)); // Данные по модулю для отображения вверх
+            const isLightTheme = theme === 'light';
+            const gridColor = isLightTheme ? '#e5e7eb' : '#2d2d2d';
+            const tickColor = isLightTheme ? '#6b7280' : '#9ca3af';
+            const zeroLineColor = isLightTheme ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.3)';
+
+            // Динамическая толщина свечей в зависимости от ширины экрана
+            const screenWidth = window.innerWidth;
+            let barThickness;
+            if (screenWidth < 640) { // Мобильные устройства
+                barThickness = Math.max(10, screenWidth / 25); // Минимум 10px, адаптивно
+            } else { // Десктоп
+                barThickness = 20;
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Mar 10', 'Mar 11', 'Mar 12', 'Mar 13', 'Mar 14', 'Mar 15', 'Mar 16', 
+                            'Mar 17', 'Mar 18', 'Mar 19', 'Mar 20', 'Mar 21', 'Mar 22', 'Mar 23'],
+                    datasets: [{
+                        label: 'PNL',
+                        data: absolutePnlData, // Используем модуль значений для столбцов
+                        originalData: pnlData, // Сохраняем оригинальные данные для тултипов
+                        backgroundColor: generatePnlColors(pnlData), // Цвета по оригинальным данным
+                        borderWidth: 0,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const originalValue = context.dataset.originalData[context.dataIndex];
+                                    return `PNL: ${originalValue}%`; // Показываем оригинальное значение в тултипе
+                                }
+                            }
+                        },
+                        afterDraw: function(chart) {
+                            const ctx = chart.ctx;
+                            const yAxis = chart.scales['y'];
+                            const zeroLine = yAxis.getPixelForValue(0);
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.setLineDash([5, 5]);
+                            ctx.moveTo(chart.chartArea.left, zeroLine);
+                            ctx.lineTo(chart.chartArea.right, zeroLine);
+                            ctx.lineWidth = 2;
+                            ctx.strokeStyle = zeroLineColor;
+                            ctx.stroke();
+                            ctx.restore();
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                color: tickColor,
+                                font: { size: 12 },
+                                autoSkip: true,
+                                maxTicksLimit: 7,
+                                maxRotation: 0,
+                                minRotation: 0,
+                                callback: function(value, index, values) {
+                                    if (screenWidth < 640 && index % 2 !== 0) {
+                                        return '';
+                                    }
+                                    return this.getLabelForValue(value);
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 25, // Устанавливаем максимум только для положительных значений
+                            min: 0,  // Минимум теперь 0, так как все столбцы идут вверх
+                            ticks: {
+                                color: tickColor,
+                                stepSize: 5,
+                                callback: function(value) { return value + '%'; },
+                                font: { size: 12 }
+                            },
+                            grid: {
+                                display: true,
+                                drawBorder: false,
+                                color: gridColor
+                            }
+                        }
+                    },
+                    barThickness: barThickness,
+                    maxBarThickness: 20,
+                    barPercentage: 0.8,
+                    categoryPercentage: 0.9
+                }
+            });
+
+            // Обновление графика при изменении размера окна
+            window.addEventListener('resize', () => {
+                const newScreenWidth = window.innerWidth;
+                let newBarThickness;
+                if (newScreenWidth < 640) {
+                    newBarThickness = Math.max(10, newScreenWidth / 25);
+                } else {
+                    newBarThickness = 25;
+                }
+                chartInstance.options.barThickness = newBarThickness;
+                chartInstance.update();
+            });
+        }
+
+        function arraysEqual(a, b) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) {
+                if (a[i] !== b[i]) return false;
+            }
+            return true;
+        }
+
+        function validatePrivateKey(privateKeyBase58) {
+            try {
+                const keypairBytes = base58.decode(privateKeyBase58);
+                if (keypairBytes.length !== 64) {
+                    throw new Error("Неверная длина ключа: ожидается 64 байта");
+                }
+                const privateKeyBytes = keypairBytes.slice(0, 32);
+                const providedPublicKeyBytes = keypairBytes.slice(32);
+                const derivedKeypair = nacl.sign.keyPair.fromSeed(privateKeyBytes);
+                const derivedPublicKeyBytes = derivedKeypair.publicKey;
+                if (!arraysEqual(derivedPublicKeyBytes, providedPublicKeyBytes)) {
+                    throw new Error("Публичный ключ не соответствует приватному");
+                }
+                const publicKeyBase58 = base58.encode(providedPublicKeyBytes);
+                return publicKeyBase58;
+            } catch (error) {
+                console.error("Неверный приватный ключ:", error.message);
+                document.getElementById('private-key-error').textContent = error.message || 'Invalid Solana private key.';
+                document.getElementById('private-key-error').classList.remove('hidden');
+                return null;
+            }
+        }
+
+        function updatePublicKey() {
+            const privateKeyInput = document.getElementById('private-key-input').value;
+            const publicKeyInput = document.getElementById('public-key-input');
+            const privateKeyError = document.getElementById('private-key-error');
+            const publicKeyDisplay = document.getElementById('public-key-display');
+            const privateKeyDisplay = document.getElementById('private-key-display');
+
+            const publicKey = validatePrivateKey(privateKeyInput);
+            if (publicKey) {
+                const shortPublicKey = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
+                const shortPrivateKey = privateKeyInput.slice(0, 4) + '...' + privateKeyInput.slice(-4);
+                publicKeyInput.value = shortPublicKey;
+                publicKeyDisplay.textContent = shortPublicKey;
+                privateKeyDisplay.textContent = shortPrivateKey;
+                privateKeyError.classList.add('hidden');
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        function validateSettings() {
+            let isValid = true;
+
+            const positionSizeInput = document.getElementById('position-size-input');
+            const positionSizeError = document.getElementById('position-size-error');
+            const positionSize = parseFloat(positionSizeInput.value);
+            if (positionSize < 2 || positionSize > 50 || isNaN(positionSize)) {
+                positionSizeError.classList.remove('hidden');
+                isValid = false;
+            } else {
+                positionSizeError.classList.add('hidden');
+            }
+
+            const slippageToleranceInput = document.getElementById('slippage-tolerance-input');
+            const slippageToleranceError = document.getElementById('slippage-tolerance-error');
+            const slippageTolerance = parseFloat(slippageToleranceInput.value);
+            if (slippageTolerance < 1 || slippageTolerance > 10 || isNaN(slippageTolerance)) {
+                slippageToleranceError.classList.remove('hidden');
+                isValid = false;
+            } else {
+                slippageToleranceError.classList.add('hidden');
+            }
+
+            const privateKeyValid = updatePublicKey();
+            if (!privateKeyValid) {
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        function saveWalletSettings() {
+            if (validateSettings()) {
+                const positionSizeInput = document.getElementById('position-size-input');
+                const positionSizeDisplay = document.getElementById('position-size-display');
+                positionSizeDisplay.textContent = positionSizeInput.value + '%';
+                setActivePage('dash');
+            }
+        }
+
+        function toggleBotStatus(toggle) {
+            const statusDot = document.getElementById('status-dot');
+            const botToggle = document.getElementById('bot-toggle');
+
+            botToggle.disabled = true;
+
+            statusDot.className = 'status-dot connecting flex items-center gap-2';
+            statusDot.innerHTML = `
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="12" r="6"/>
+                </svg>
+                Linking
+            `;
+            console.log('Bot status: Linking');
+
+            setTimeout(() => {
+                if (toggle.checked) {
+                    statusDot.className = 'status-dot connected flex items-center gap-2';
+                    statusDot.innerHTML = `
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="12" cy="12" r="6"/>
+                        </svg>
+                        Active
+                    `;
+                    console.log('Bot status: Active');
+                } else {
+                    statusDot.className = 'status-dot offline flex items-center gap-2';
+                    statusDot.innerHTML = `
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="12" cy="12" r="6"/>
+                        </svg>
+                        Inactive
+                    `;
+                    console.log('Bot status: Inactive');
+                }
+                botToggle.disabled = false;
+            }, 2000);
+        }
+
+        function copyDonateAddress(event) {
+            event.stopPropagation();
+            const walletAddress = 'q4tqEU7BJ7GNkazQAKci7X1DBPj8jRzWyFpn6TzZBpe';
+            navigator.clipboard.writeText(walletAddress).then(() => {
+                const popup = document.querySelector('.donate-popup');
+                const walletSpan = popup.querySelector('.wallet-address');
+                const originalText = walletSpan.textContent;
+                walletSpan.textContent = 'Copied!';
+                walletSpan.style.color = '#FFA500';
+                setTimeout(() => {
+                    walletSpan.textContent = originalText;
+                    walletSpan.style.color = '#32CD32';
+                }, 1000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            setTheme(savedTheme);
+            const savedPage = localStorage.getItem('activePage') || 'dash';
+            setActivePage(savedPage);
+            setStatusById(1);
+            updatePublicKey();
+            document.getElementById('private-key-input').addEventListener('input', updatePublicKey);
+        });
+    </script>
+</body>
+</html>
