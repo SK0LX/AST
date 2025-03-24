@@ -84,4 +84,4 @@ docker-compose.yml
 pyrightconfig.json
 
 # DB #
-.sql
+*.sql
