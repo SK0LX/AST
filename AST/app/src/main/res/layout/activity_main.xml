@@ -1,0 +1,14 @@
+<ViewFlipper
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/flipper"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:animateFirstView="false"
+    android:inAnimation="@anim/slide_in_right"
+    android:outAnimation="@anim/slide_out_left">
+
+    <include layout="@layout/login"/>
+    <include layout="@layout/register"/>
+    <include layout="@layout/verify_code"/>
+
+</ViewFlipper>
