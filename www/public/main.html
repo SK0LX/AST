@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2332CD32' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Ccircle cx='12' cy='12' r='6'/%3E%3Ccircle cx='12' cy='12' r='2'/%3E%3Cpath d='M12 2v4'/%3E%3Cpath d='M12 18v4'/%3E%3Cpath d='M2 12h4'/%3E%3Cpath d='M18 12h4'/%3E%3C/svg%3E">
     <style>
+        /* Стили остаются без изменений */
         body {
             font-family: 'Inter', sans-serif;
             transition: all 0.3s ease;
@@ -51,9 +52,9 @@
             align-items: center; 
             gap: 0.5rem; 
         }
-        body.dark .status-dot.connected { color: #32CD32; }
-        body.dark .status-dot.connecting { color: #FFA500; }
-        body.dark .status-dot.offline { color: #FF4500; }
+        body.dark .status-dot.active { color: #32CD32; }
+        body.dark .status-dot.linking { color: #FFA500; }
+        body.dark .status-dot.inactive { color: #FF4500; }
         body.dark .highlight { 
             color: #32CD32; 
             font-weight: 600; 
@@ -174,9 +175,9 @@
             align-items: center; 
             gap: 0.5rem; 
         }
-        body.light .status-dot.connected { color: #32CD32; }
-        body.light .status-dot.connecting { color: #FFA500; }
-        body.light .status-dot.offline { color: #FF4500; }
+        body.light .status-dot.active { color: #32CD32; }
+        body.light .status-dot.linking { color: #FFA500; }
+        body.light .status-dot.inactive { color: #FF4500; }
         body.light .highlight { 
             color: #32CD32; 
             font-weight: 600; 
@@ -315,7 +316,7 @@
         .donate-popup {
             position: absolute;
             top: calc(100% + 0.5rem);
-            right: 0; /* Привязываем к правому краю profile-icon */
+            right: 0;
             padding: 0.75rem 1rem;
             border-radius: 0.5rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -328,7 +329,7 @@
             transition: opacity 0.3s ease-in-out, background-color 0.2s ease;
             white-space: nowrap;
             max-width: 32rem;
-            transform: translateX(0); /* Убираем фиксированное смещение */
+            transform: translateX(0);
         }
         .profile-container:hover .donate-popup {
             opacity: 1;
@@ -347,7 +348,6 @@
             width: 12px;
             height: 12px;
         }
-
         ::-webkit-scrollbar-thumb {  
             border-radius: 6px;
         }
@@ -387,7 +387,6 @@
             .donate-popup {
                 font-size: 0.75rem;
                 padding: 0.5rem 0.75rem;
-                
             }
             .logout-button {
                 font-size: 0.75rem;
@@ -439,14 +438,14 @@
                             <div class="flex justify-between items-center">
                                 <h3 class="text-lg font-semibold">Asset Vault</h3>
                                 <div class="flex items-center gap-4">
-                                    <span id="status-dot" class="status-dot connected flex items-center gap-2">
+                                    <span id="status-dot" class="status-dot inactive flex items-center gap-2">
                                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                                             <circle cx="12" cy="12" r="6"/>
                                         </svg>
-                                        Active
+                                        Inactive
                                     </span>
                                     <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" id="bot-toggle" class="sr-only peer" checked onchange="toggleBotStatus(this)">
+                                        <input type="checkbox" id="bot-toggle" class="sr-only peer" onchange="toggleBotStatus(this)">
                                         <div class="w-11 h-6 bg-[#2d2d2d] rounded-full peer peer-checked:bg-[#eee] transition-all duration-300 ease-in-out"></div>
                                         <div class="absolute left-1 top-1 w-4 h-4 bg-white peer-checked:bg-[#0a0a0a] rounded-full transition-all duration-300 ease-in-out peer-checked:translate-x-5"></div>
                                     </label>
@@ -464,7 +463,7 @@
                                         <span class="font-medium">Balance</span>
                                     </div>
                                     <div class="pl-7">
-                                        <p class="text-lg font-semibold highlight">12.45 SOL</p>
+                                        <p class="text-lg font-semibold highlight" id="balance-display">0 SOL</p>
                                     </div>
                                 </div>
                                 <div class="space-y-2">
@@ -475,7 +474,7 @@
                                         <span class="font-medium">Wallet Address</span>
                                     </div>
                                     <div class="pl-7">
-                                        <p class="text-sm description" id="public-key-display">7x9K...6aF2</p>
+                                        <p class="text-sm description" id="public-key-display">Not set</p>
                                     </div>
                                 </div>
                                 <div class="space-y-2">
@@ -486,7 +485,7 @@
                                         <span class="font-medium">Private Key</span>
                                     </div>
                                     <div class="pl-7">
-                                        <p class="text-sm description" id="private-key-display">**** **** **** 6aF2</p>
+                                        <p class="text-sm description" id="private-key-display">Not set</p>
                                     </div>
                                 </div>
                                 <div class="space-y-2">
@@ -497,7 +496,7 @@
                                         <span class="font-medium">Position Size</span>
                                     </div>
                                     <div class="pl-7">
-                                        <p class="text-lg font-semibold" id="position-size-display">25%</p>
+                                        <p class="text-lg font-semibold" id="position-size-display">--%</p>
                                     </div>
                                 </div>
                             </div>
@@ -513,7 +512,7 @@
                                 Overview of your sniping activity.
                             </p>
                             <div class="flex items-center gap-2">
-                                <span class="text-xl font-semibold highlight">78% Success Rate</span>
+                                <span class="text-xl font-semibold highlight" id="success-rate-display">0 %</span>
                                 <svg class="h-4 w-4 blinking-circle" viewBox="0 0 24 24" fill="#32CD32">
                                     <circle cx="12" cy="12" r="6"/>
                                 </svg>
@@ -521,15 +520,15 @@
                             <div class="grid grid-cols-3 gap-4 text-center">
                                 <div class="time-block">
                                     <p class="label">Trades Today</p>
-                                    <p class="value">14</p>
+                                    <p class="value" id="trades-today-display">0</p>
                                 </div>
                                 <div class="time-block">
                                     <p class="label">Trades Hourly</p>
-                                    <p class="value">2</p>
+                                    <p class="value" id="trades-hourly-display">0</p>
                                 </div>
                                 <div class="time-block">
                                     <p class="label">Total Trades</p>
-                                    <p class="value">156</p>
+                                    <p class="value" id="total-trades-display">0</p>
                                 </div>
                             </div>
                         </div>
@@ -539,7 +538,7 @@
                     <div class="uptime-graph p-6">
                         <h3 class="text-lg font-semibold">PNL Performance</h3>
                         <p class="text-sm description mb-4">
-                            Your profit/loss in percentage over the last 14 days.
+                            Your profit/loss in SOL over the last 14 days.
                         </p>
                         <div class="chart-container">
                             <canvas id="uptimeChart"></canvas>
@@ -571,21 +570,21 @@
                         <div class="space-y-6">
                             <div>
                                 <label class="block text-sm font-medium">Private Key</label>
-                                <input type="text" id="private-key-input" value="5EBpFWyjf218pZoJ6PM498jGKbAXxkP6jHXfs9rPkDpEmBAFgbWnbS9gHe7NreUR6yCyLRdgUrc6STvRazZpbLKQ" class="w-full mt-1 p-2 bg-transparent border border-gray-600 rounded">
+                                <input type="text" id="private-key-input" class="w-full mt-1 p-2 bg-transparent border border-gray-600 rounded" placeholder="Enter your Solana private key">
                                 <p id="private-key-error" class="error-message hidden">Invalid Solana private key.</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium">Primary Wallet Address</label>
-                                <input type="text" id="public-key-input" value="7x9K...6aF2" class="w-full mt-1 p-2 bg-transparent border border-gray-600 rounded" readonly>
+                                <input type="text" id="public-key-input" class="w-full mt-1 p-2 bg-transparent border border-gray-600 rounded" readonly>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium">Position Size (%)</label>
-                                <input type="number" id="position-size-input" value="25" class="w-full mt-1 p-2 bg-transparent border border-gray-600 rounded">
+                                <input type="number" id="position-size-input" class="w-full mt-1 p-2 bg-transparent border border-gray-600 rounded" min="2" max="50">
                                 <p id="position-size-error" class="error-message hidden">Position Size must be between 2% and 50%.</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium">Slippage Tolerance (%)</label>
-                                <input type="number" id="slippage-tolerance-input" value="2" step="0.1" class="w-full mt-1 p-2 bg-transparent border border-gray-600 rounded">
+                                <input type="number" id="slippage-tolerance-input" class="w-full mt-1 p-2 bg-transparent border border-gray-600 rounded" min="1" max="10" step="0.1">
                                 <p id="slippage-tolerance-error" class="error-message hidden">Slippage Tolerance must be between 1% and 10%.</p>
                             </div>
                             <button class="w-full py-2 view-nodes-button" onclick="saveWalletSettings()">
@@ -668,526 +667,467 @@
         </div>
     </div>
 
-<script>
-    const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-    const base58 = {
-        decode: function(string) {
-            const bytes = [0];
-            for (let i = 0; i < string.length; i++) {
-                const value = BASE58_ALPHABET.indexOf(string[i]);
-                if (value < 0) throw new Error('Неверный символ в base58 строке');
-                for (let j = 0; j < bytes.length; j++) bytes[j] *= 58;
-                bytes[0] += value;
-                let carry = 0;
-                for (let j = 0; j < bytes.length; j++) {
-                    carry = (bytes[j] / 256) | 0;
-                    bytes[j] %= 256;
-                    if (carry && j + 1 === bytes.length) bytes.push(0);
-                    if (j + 1 < bytes.length) bytes[j + 1] += carry;
+    <script>
+        const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+        const base58 = {
+            decode: string => {
+                const bytes = [0];
+                for (let i = 0; i < string.length; i++) {
+                    const value = BASE58_ALPHABET.indexOf(string[i]);
+                    if (value < 0) throw new Error('Invalid base58 character');
+                    for (let j = 0; j < bytes.length; j++) bytes[j] *= 58;
+                    bytes[0] += value;
+                    let carry = 0;
+                    for (let j = 0; j < bytes.length; j++) {
+                        carry = (bytes[j] / 256) | 0;
+                        bytes[j] %= 256;
+                        if (carry && j + 1 === bytes.length) bytes.push(0);
+                        if (j + 1 < bytes.length) bytes[j + 1] += carry;
+                    }
                 }
-            }
-            while (string[0] === '1' && bytes[bytes.length - 1] === 0) bytes.pop();
-            return Uint8Array.from(bytes.reverse());
-        },
-        encode: function(bytes) {
-            const digits = [0];
-            for (let i = 0; i < bytes.length; i++) {
-                for (let j = 0; j < digits.length; j++) digits[j] *= 256;
-                digits[0] += bytes[i];
-                let carry = 0;
-                for (let j = 0; j < digits.length; j++) {
-                    carry = (digits[j] / 58) | 0;
-                    digits[j] %= 58;
-                    if (carry && j + 1 === digits.length) digits.push(0);
-                    if (j + 1 < digits.length) digits[j + 1] += carry;
+                while (string[0] === '1' && bytes[bytes.length - 1] === 0) bytes.pop();
+                return Uint8Array.from(bytes.reverse());
+            },
+            encode: bytes => {
+                const digits = [0];
+                for (let i = 0; i < bytes.length; i++) {
+                    for (let j = 0; j < digits.length; j++) digits[j] *= 256;
+                    digits[0] += bytes[i];
+                    let carry = 0;
+                    for (let j = 0; j < digits.length; j++) {
+                        carry = (digits[j] / 58) | 0;
+                        digits[j] %= 58;
+                        if (carry && j + 1 === digits.length) digits.push(0);
+                        if (j + 1 < digits.length) digits[j + 1] += carry;
+                    }
                 }
+                let string = '';
+                while (digits[digits.length - 1] === 0) digits.pop();
+                for (let i = digits.length - 1; i >= 0; i--) string += BASE58_ALPHABET[digits[i]];
+                for (let i = 0; i < bytes.length && bytes[i] === 0; i++) string = '1' + string;
+                return string;
             }
-            let string = '';
-            while (digits[digits.length - 1] === 0) digits.pop();
-            for (let i = digits.length - 1; i >= 0; i--) {
-                string += BASE58_ALPHABET[digits[i]];
-            }
-            for (let i = 0; i < bytes.length && bytes[i] === 0; i++) string = '1' + string;
-            return string;
-        }
-    };
+        };
 
-    async function checkAuth() {
-        const userId = localStorage.getItem('userId');
-        if (!userId) {
-            console.log('No userId in localStorage, redirecting to login');
-            window.location.href = '/login.html';
-            return false;
+        function arraysEqual(a, b) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+            return true;
         }
 
-        try {
-            const response = await fetch(`/check-auth?userId=${userId}`, {
-                method: 'GET',
-                credentials: 'include'
-            });
-            if (!response.ok) {
-                console.error('Check-auth failed with status:', response.status);
-                throw new Error('Network response was not ok');
+        function validatePrivateKey(privateKeyBase58) {
+            try {
+                const keypairBytes = base58.decode(privateKeyBase58);
+                if (keypairBytes.length !== 64) throw new Error('Invalid key length: expected 64 bytes');
+                const privateKeyBytes = keypairBytes.slice(0, 32);
+                const providedPublicKeyBytes = keypairBytes.slice(32);
+                const derivedKeypair = nacl.sign.keyPair.fromSeed(privateKeyBytes);
+                if (!arraysEqual(derivedKeypair.publicKey, providedPublicKeyBytes)) throw new Error('Public key mismatch');
+                return base58.encode(providedPublicKeyBytes);
+            } catch (error) {
+                console.error('Invalid private key:', error.message);
+                document.getElementById('private-key-error').textContent = error.message;
+                document.getElementById('private-key-error').classList.remove('hidden');
+                return null;
             }
-            const data = await response.json();
-            console.log('Check-auth response:', data);
-            if (!data.authenticated) {
-                console.log('User not authenticated, redirecting to login');
+        }
+
+        function updatePublicKey() {
+            const privateKeyInput = document.getElementById('private-key-input').value.trim();
+            const publicKeyInput = document.getElementById('public-key-input');
+            const publicKey = validatePrivateKey(privateKeyInput);
+            if (publicKey) {
+                const shortPublicKey = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
+                publicKeyInput.value = shortPublicKey;
+                document.getElementById('private-key-error').classList.add('hidden');
+                return { publicKey, privateKey: privateKeyInput };
+            }
+            return null;
+        }
+
+        let currentPublicKey = null;
+
+        async function checkAuth() {
+            const userId = localStorage.getItem('userId');
+            if (!userId) {
+                window.location.href = '/login.html';
+                return false;
+            }
+            try {
+                const response = await fetch(`/check-auth?userId=${userId}`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                if (!response.ok) throw new Error('Auth check failed');
+                const data = await response.json();
+                if (!data.authenticated) {
+                    localStorage.removeItem('userId');
+                    window.location.href = '/login.html';
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Error checking auth:', error);
                 localStorage.removeItem('userId');
                 window.location.href = '/login.html';
                 return false;
             }
-            return true;
-        } catch (error) {
-            console.error('Error checking auth:', error);
+        }
+
+        async function logout() {
+            const userId = localStorage.getItem('userId');
+            if (userId) {
+                try {
+                    await fetch('/logout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId }),
+                    });
+                } catch (error) {
+                    console.error('Error during logout:', error);
+                }
+            }
             localStorage.removeItem('userId');
             window.location.href = '/login.html';
-            return false;
         }
-    }
 
-    async function logout() {
-        const userId = localStorage.getItem('userId');
-        if (userId) {
-            try {
-                const response = await fetch('/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ userId }),
-                });
-                const data = await response.json();
-                console.log('Logout response:', data);
-            } catch (error) {
-                console.error('Error during logout:', error);
+        function setTheme(theme) {
+            const body = document.body;
+            const themeIcon = document.getElementById('theme-icon');
+            if (theme === 'dark') {
+                body.classList.remove('light');
+                body.classList.add('dark');
+                themeIcon.innerHTML = `<path d="M21.4 13.7C20.6 13.9 19.8 14 19 14c-5 0-9-4-9-9 0-.8.1-1.6.3-2.4-4.2 1.1-7.3 4.9-7.3 9.4 0 5.5 4.5 10 10 10 4.5 0 8.3-3 9.4-7.3z"/>`;
+            } else {
+                body.classList.remove('dark');
+                body.classList.add('light');
+                themeIcon.innerHTML = `<circle cx="12" cy="12" r="4"/><circle cx="12" cy="4" r="1"/><circle cx="12" cy="20" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="20" cy="12" r="1"/><circle cx="6.34" cy="6.34" r="1"/><circle cx="17.66" cy="17.66" r="1"/><circle cx="6.34" cy="17.66" r="1"/><circle cx="17.66" cy="6.34" r="1"/>`;
+            }
+            if (chartInstance) {
+                updateChartColors(theme);
             }
         }
-        localStorage.removeItem('userId');
-        window.location.href = '/login.html';
-    }
 
-    function setTheme(theme) {
-        const body = document.body;
-        const themeIcon = document.getElementById('theme-icon');
-        if (theme === 'dark') {
-            body.classList.remove('light');
-            body.classList.add('dark');
-            themeIcon.innerHTML = `
-                <path d="M21.4 13.7C20.6 13.9 19.8 14 19 14c-5 0-9-4-9-9 0-.8.1-1.6.3-2.4-4.2 1.1-7.3 4.9-7.3 9.4 0 5.5 4.5 10 10 10 4.5 0 8.3-3 9.4-7.3z"/>
-            `;
-        } else {
-            body.classList.remove('dark');
-            body.classList.add('light');
-            themeIcon.innerHTML = `
-                <circle cx="12" cy="12" r="4"/>
-                <circle cx="12" cy="4" r="1"/>
-                <circle cx="12" cy="20" r="1"/>
-                <circle cx="4" cy="12" r="1"/>
-                <circle cx="20" cy="12" r="1"/>
-                <circle cx="6.34" cy="6.34" r="1"/>
-                <circle cx="17.66" cy="17.66" r="1"/>
-                <circle cx="6.34" cy="17.66" r="1"/>
-                <circle cx="17.66" cy="6.34" r="1"/>
-            `;
+        function toggleTheme() {
+            const body = document.body;
+            const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
+            setTheme(newTheme);
+            localStorage.setItem('theme', newTheme);
         }
-        updateChartTheme(theme);
-    }
 
-    function toggleTheme() {
-        const body = document.body;
-        const currentTheme = body.classList.contains('dark') ? 'dark' : 'light';
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        setTheme(newTheme);
-        localStorage.setItem('theme', newTheme);
-    }
+        function setActivePage(page) {
+            document.querySelectorAll('.page-content').forEach(content => content.classList.add('hidden'));
+            document.getElementById(`${page}-content`).classList.remove('hidden');
+            document.getElementById('page-title').textContent = page === 'dash' ? 'Dashboard' : page === 'docs' ? '' : page.charAt(0).toUpperCase() + page.slice(1);
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.toggle('active', link.getAttribute('data-page') === page);
+            });
+            localStorage.setItem('activePage', page);
+        }
 
-    function setActivePage(page) {
-        document.querySelectorAll('.page-content').forEach(content => {
-            content.classList.add('hidden');
-        });
-        const activeContent = document.getElementById(`${page}-content`);
-        if (activeContent) {
-            activeContent.classList.remove('hidden');
-        }
-        if (page === 'dash') {
-            document.getElementById('page-title').textContent = 'Dashboard';
-        } else if (page === 'docs') {
-            document.getElementById('page-title').textContent = '';
-        } else {
-            document.getElementById('page-title').textContent = page.charAt(0).toUpperCase() + page.slice(1);
-        }
         document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('data-page') === page) {
-                link.classList.add('active');
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                setActivePage(link.getAttribute('data-page'));
+            });
+        });
+
+        let chartInstance;
+
+        function formatDate(date) {
+            return date.toLocaleString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function getLast14Days() {
+            const dates = [];
+            const today = new Date();
+            for (let i = 13; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                dates.push(formatDate(date));
             }
-        });
-        localStorage.setItem('activePage', page);
-    }
-
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const page = link.getAttribute('data-page');
-            setActivePage(page);
-        });
-    });
-
-    function setStatusById(statusId) {
-        const statusDot = document.getElementById('status-dot');
-        if (statusId === 1) {
-            statusDot.className = 'status-dot connected flex items-center gap-2';
-            statusDot.innerHTML = `
-                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="12" cy="12" r="6"/>
-                </svg>
-                Active
-            `;
-        } else if (statusId === 2) {
-            statusDot.className = 'status-dot connecting flex items-center gap-2';
-            statusDot.innerHTML = `
-                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="12" cy="12" r="6"/>
-                </svg>
-                Linking
-            `;
-        } else if (statusId === 3) {
-            statusDot.className = 'status-dot offline flex items-center gap-2';
-            statusDot.innerHTML = `
-                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="12" cy="12" r="6"/>
-                </svg>
-                Inactive
-            `;
-        }
-    }
-
-    function generateRandomPnlData(length, max) {
-        return Array.from({ length }, () => {
-            const value = Math.floor(Math.random() * max) - (max / 2);
-            return value;
-        });
-    }
-
-    function generatePnlColors(data) {
-        return data.map(value => value >= 0 ? 'rgba(46, 125, 50, 0.9)' : 'rgba(211, 47, 47, 0.9)');
-    }
-
-    let chartInstance;
-
-    function updateChartTheme(theme) {
-        if (chartInstance) {
-            chartInstance.destroy();
+            return dates;
         }
 
-        const ctx = document.getElementById('uptimeChart').getContext('2d');
-        ctx.imageSmoothingEnabled = false;
-        const pnlData = generateRandomPnlData(14, 50);
-        const absolutePnlData = pnlData.map(value => Math.abs(value));
-        const isLightTheme = theme === 'light';
-        const gridColor = isLightTheme ? '#e5e7eb' : '#2d2d2d';
-        const tickColor = isLightTheme ? '#6b7280' : '#9ca3af';
-        const zeroLineColor = isLightTheme ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.3)';
-
-        const screenWidth = window.innerWidth;
-        let barThickness;
-        let maxTicksLimit = 14;
-        let tickRotation = 0;
-
-        if (screenWidth < 400) {
-            barThickness = Math.max(8, screenWidth / 30);
-            maxTicksLimit = 7;
-            tickRotation = 0;
-        } else if (screenWidth < 640) {
-            barThickness = Math.max(10, screenWidth / 25);
-            maxTicksLimit = 14;
-            tickRotation = 45;
-        } else {
-            barThickness = 20;
-            maxTicksLimit = 14;
-            tickRotation = 0;
+        // Форматирование числа до первой значимой цифры
+        function formatToSignificant(value) {
+            if (value === 0) return '0 SOL';
+            const absValue = Math.abs(value);
+            if (absValue >= 1) return `${value.toFixed(3)} SOL`; // Для больших чисел 3 знака
+            const digits = -Math.floor(Math.log10(absValue)) + 1; // Определяем нужное количество знаков
+            return `${value.toFixed(Math.min(digits, 9))} SOL`; // До 9 знаков максимум
         }
 
-        chartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Mar 10', 'Mar 11', 'Mar 12', 'Mar 13', 'Mar 14', 'Mar 15', 'Mar 16', 
-                        'Mar 17', 'Mar 18', 'Mar 19', 'Mar 20', 'Mar 21', 'Mar 22', 'Mar 23'],
-                datasets: [{
-                    label: 'PNL',
-                    data: absolutePnlData,
-                    originalData: pnlData,
-                    backgroundColor: generatePnlColors(pnlData),
-                    borderWidth: 0,
-                    borderRadius: 4,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const originalValue = context.dataset.originalData[context.dataIndex];
-                                return `PNL: ${originalValue}%`;
-                            }
-                        }
-                    },
-                    afterDraw: function(chart) {
-                        const ctx = chart.ctx;
-                        const yAxis = chart.scales['y'];
-                        const zeroLine = yAxis.getPixelForValue(0);
-                        ctx.save();
-                        ctx.beginPath();
-                        ctx.setLineDash([5, 5]);
-                        ctx.moveTo(chart.chartArea.left, zeroLine);
-                        ctx.lineTo(chart.chartArea.right, zeroLine);
-                        ctx.lineWidth = 2;
-                        ctx.strokeStyle = zeroLineColor;
-                        ctx.stroke();
-                        ctx.restore();
-                    }
+        function createChart(theme) {
+            const ctx = document.getElementById('uptimeChart').getContext('2d');
+            const isLightTheme = theme === 'light';
+            const gridColor = isLightTheme ? '#e5e7eb' : '#2d2d2d';
+            const tickColor = isLightTheme ? '#6b7280' : '#9ca3af';
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: getLast14Days(),
+                    datasets: [{
+                        label: 'PNL',
+                        data: Array(14).fill(0),
+                        rawData: Array(14).fill(0), // Сохраняем исходные значения для tooltip
+                        backgroundColor: data => data.raw >= 0 ? 'rgba(46, 125, 50, 0.9)' : 'rgba(211, 47, 47, 0.9)',
+                        borderWidth: 0,
+                        borderRadius: 4,
+                    }]
                 },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: {
-                            color: tickColor,
-                            font: { size: 12 },
-                            autoSkip: false,
-                            maxTicksLimit: maxTicksLimit,
-                            maxRotation: tickRotation,
-                            minRotation: tickRotation,
-                            callback: function(value, index, values) {
-                                if (maxTicksLimit < values.length && index % 2 !== 0) {
-                                    return '';
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const rawValue = context.dataset.rawData[context.dataIndex];
+                                    return `PNL: ${formatToSignificant(rawValue)}`;
                                 }
-                                return this.getLabelForValue(value);
-                            }
+                            },
+                            padding: 10, // Увеличиваем внутренние отступы
+                            bodyFont: { size: 14 }, // Увеличиваем размер шрифта
+                            displayColors: false, // Убираем цветной квадратик
                         }
                     },
-                    y: {
-                        beginAtZero: true,
-                        max: 25,
-                        min: 0,
-                        ticks: {
-                            color: tickColor,
-                            stepSize: 5,
-                            callback: function(value) { return value + '%'; },
-                            font: { size: 12 }
-                        },
-                        grid: {
-                            display: true,
-                            drawBorder: false,
-                            color: gridColor
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: tickColor } },
+                        y: { 
+                            beginAtZero: true, // Начинаем с 0
+                            ticks: { 
+                                color: tickColor, 
+                                callback: value => formatToSignificant(value), // Форматируем подписи оси
+                                stepSize: null // Автоматический шаг
+                            }, 
+                            grid: { color: gridColor }
                         }
                     }
-                },
-                barThickness: barThickness,
-                maxBarThickness: 20,
-                barPercentage: 0.8,
-                categoryPercentage: 0.9
-            }
-        });
+                }
+            });
+        }
 
-        window.addEventListener('resize', () => {
-            const newScreenWidth = window.innerWidth;
-            let newBarThickness;
-            let newMaxTicksLimit = 14;
-            let newTickRotation = 0;
-
-            if (newScreenWidth < 400) {
-                newBarThickness = Math.max(8, newScreenWidth / 30);
-                newMaxTicksLimit = 7;
-                newTickRotation = 0;
-            } else if (newScreenWidth < 640) {
-                newBarThickness = Math.max(10, newScreenWidth / 25);
-                newMaxTicksLimit = 14;
-                newTickRotation = 45;
-            } else {
-                newBarThickness = 20;
-                newMaxTicksLimit = 14;
-                newTickRotation = 0;
-            }
-
-            chartInstance.options.barThickness = newBarThickness;
-            chartInstance.options.scales.x.ticks.maxTicksLimit = newMaxTicksLimit;
-            chartInstance.options.scales.x.ticks.maxRotation = newTickRotation;
-            chartInstance.options.scales.x.ticks.minRotation = newTickRotation;
+        function updateChartColors(theme) {
+            const isLightTheme = theme === 'light';
+            const gridColor = isLightTheme ? '#e5e7eb' : '#2d2d2d';
+            const tickColor = isLightTheme ? '#6b7280' : '#9ca3af';
+            
+            chartInstance.options.scales.x.ticks.color = tickColor;
+            chartInstance.options.scales.y.ticks.color = tickColor;
+            chartInstance.options.scales.y.grid.color = gridColor;
             chartInstance.update();
-        });
-    }
-
-    function arraysEqual(a, b) {
-        if (a.length !== b.length) return false;
-        for (let i = 0; i < a.length; i++) {
-            if (a[i] !== b[i]) return false;
         }
-        return true;
-    }
 
-    function validatePrivateKey(privateKeyBase58) {
-        try {
-            const keypairBytes = base58.decode(privateKeyBase58);
-            if (keypairBytes.length !== 64) {
-                throw new Error("Неверная длина ключа: ожидается 64 байта");
+        function copyDonateAddress(event) {
+            event.stopPropagation();
+            const walletAddress = 'q4tqEU7BJ7GNkazQAKci7X1DBPj8jRzWyFpn6TzZBpe';
+            navigator.clipboard.writeText(walletAddress).then(() => {
+                const popup = document.querySelector('.donate-popup');
+                const walletSpan = popup.querySelector('.wallet-address');
+                const originalText = walletSpan.textContent;
+                walletSpan.textContent = 'Copied!';
+                walletSpan.style.color = '#FFA500';
+                setTimeout(() => {
+                    walletSpan.textContent = originalText;
+                    walletSpan.style.color = '#32CD32';
+                }, 1000);
+            });
+        }
+
+        function updateStatus(status) {
+            const statusDot = document.getElementById('status-dot');
+            statusDot.className = `status-dot ${status} flex items-center gap-2`;
+            statusDot.innerHTML = `
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="12" r="6"/>
+                </svg>
+                ${status.charAt(0).toUpperCase() + status.slice(1)}
+            `;
+            document.getElementById('bot-toggle').checked = status === 'active';
+        }
+
+        async function loadDashboardData() {
+            const userId = localStorage.getItem('userId');
+            if (!userId) return;
+
+            try {
+                const response = await fetch(`/dashboard?userId=${userId}`, { method: 'GET', credentials: 'include' });
+                if (!response.ok) throw new Error('Failed to load dashboard data');
+                const data = await response.json();
+
+                document.getElementById('balance-display').textContent = `${parseFloat(data.balance || 0).toFixed(3)} SOL`;
+                currentPublicKey = data.publicKey || null;
+                document.getElementById('public-key-display').textContent = data.publicKey ? `${data.publicKey.slice(0, 4)}...${data.publicKey.slice(-4)}` : 'Not set';
+                document.getElementById('private-key-display').textContent = data.privateKeyPreview || 'Not set';
+                document.getElementById('position-size-display').textContent = `${data.positionSize || 25}%`;
+                document.getElementById('success-rate-display').textContent = `${Math.round(data.successRate || 0)} %`;
+                document.getElementById('trades-today-display').textContent = data.tradesToday || 0;
+                document.getElementById('trades-hourly-display').textContent = data.tradesHourly || 0;
+                document.getElementById('total-trades-display').textContent = data.totalTrades || 0;
+
+                updateStatus(data.status || 'inactive');
+
+                document.getElementById('public-key-input').value = data.publicKey ? `${data.publicKey.slice(0, 4)}...${data.publicKey.slice(-4)}` : '';
+                document.getElementById('position-size-input').value = data.positionSize || 25;
+                document.getElementById('slippage-tolerance-input').value = data.slippageTolerance || 2;
+
+                // Суммируем PNL по дням
+                const pnlDataRaw = data.pnl || [];
+                const pnlByDate = {};
+                pnlDataRaw.forEach(item => {
+                    const date = new Date(item.date).toISOString().split('T')[0];
+                    if (!pnlByDate[date]) {
+                        pnlByDate[date] = 0;
+                    }
+                    pnlByDate[date] += item.value;
+                });
+
+                // Преобразуем в массив для графика (только абсолютные значения для высоты столбцов)
+                const labels = getLast14Days();
+                const today = new Date();
+                const chartData = Array(14).fill(0).map((_, i) => {
+                    const date = new Date(today);
+                    date.setDate(today.getDate() - (13 - i));
+                    const dateStr = date.toISOString().split('T')[0];
+                    const value = pnlByDate[dateStr] || 0;
+                    return { value: Math.abs(value), raw: value }; // value для высоты, raw для tooltip
+                });
+
+                // Обновляем график
+                chartInstance.data.labels = labels;
+                chartInstance.data.datasets[0].data = chartData.map(item => item.value); // Высота столбцов
+                chartInstance.data.datasets[0].rawData = chartData.map(item => item.raw); // Исходные данные для tooltip
+                chartInstance.data.datasets[0].backgroundColor = chartData.map(item => 
+                    item.raw >= 0 ? 'rgba(46, 125, 50, 0.9)' : 'rgba(211, 47, 47, 0.9)'
+                );
+
+                // Адаптивная шкала Y, только положительная
+                const values = chartData.map(item => item.value); // Используем абсолютные значения
+                const maxValue = Math.max(...values, 0);
+                if (maxValue > 0) {
+                    const magnitude = Math.pow(10, Math.floor(Math.log10(maxValue)));
+                    const scaleMax = Math.ceil(maxValue / magnitude * 1.2) * magnitude; // Запас 20%
+                    chartInstance.options.scales.y.max = scaleMax;
+                    chartInstance.options.scales.y.ticks.stepSize = scaleMax / 5; // 5 делений
+                } else {
+                    chartInstance.options.scales.y.max = 0.0001; // Минимальная шкала
+                    chartInstance.options.scales.y.ticks.stepSize = 0.00002;
+                }
+
+                chartInstance.update();
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
             }
-            const privateKeyBytes = keypairBytes.slice(0, 32);
-            const providedPublicKeyBytes = keypairBytes.slice(32);
-            const derivedKeypair = nacl.sign.keyPair.fromSeed(privateKeyBytes);
-            const derivedPublicKeyBytes = derivedKeypair.publicKey;
-            if (!arraysEqual(derivedPublicKeyBytes, providedPublicKeyBytes)) {
-                throw new Error("Публичный ключ не соответствует приватному");
+        }
+
+        async function toggleBotStatus(checkbox) {
+            const userId = localStorage.getItem('userId');
+            if (!userId || !currentPublicKey) {
+                checkbox.checked = false;
+                updateStatus('inactive');
+                return;
             }
-            const publicKeyBase58 = base58.encode(providedPublicKeyBytes);
-            return publicKeyBase58;
-        } catch (error) {
-            console.error("Неверный приватный ключ:", error.message);
-            document.getElementById('private-key-error').textContent = error.message || 'Invalid Solana private key.';
-            document.getElementById('private-key-error').classList.remove('hidden');
-            return null;
-        }
-    }
 
-    function updatePublicKey() {
-        const privateKeyInput = document.getElementById('private-key-input').value;
-        const publicKeyInput = document.getElementById('public-key-input');
-        const privateKeyError = document.getElementById('private-key-error');
-        const publicKeyDisplay = document.getElementById('public-key-display');
-        const privateKeyDisplay = document.getElementById('private-key-display');
+            const isActive = checkbox.checked;
+            updateStatus('linking');
 
-        const publicKey = validatePrivateKey(privateKeyInput);
-        if (publicKey) {
-            const shortPublicKey = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
-            const shortPrivateKey = privateKeyInput.slice(0, 4) + '...' + privateKeyInput.slice(-4);
-            publicKeyInput.value = shortPublicKey;
-            publicKeyDisplay.textContent = shortPublicKey;
-            privateKeyDisplay.textContent = shortPrivateKey;
-            privateKeyError.classList.add('hidden');
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    function validateSettings() {
-        let isValid = true;
-
-        const positionSizeInput = document.getElementById('position-size-input');
-        const positionSizeError = document.getElementById('position-size-error');
-        const positionSize = parseFloat(positionSizeInput.value);
-        if (positionSize < 2 || positionSize > 50 || isNaN(positionSize)) {
-            positionSizeError.classList.remove('hidden');
-            isValid = false;
-        } else {
-            positionSizeError.classList.add('hidden');
+            try {
+                const response = await fetch('/bot/toggle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, publicKey: currentPublicKey, isActive }),
+                });
+                if (!response.ok) throw new Error('Failed to toggle bot');
+                await loadDashboardData();
+            } catch (error) {
+                console.error('Error toggling bot:', error);
+                checkbox.checked = !isActive;
+                await loadDashboardData();
+            }
         }
 
-        const slippageToleranceInput = document.getElementById('slippage-tolerance-input');
-        const slippageToleranceError = document.getElementById('slippage-tolerance-error');
-        const slippageTolerance = parseFloat(slippageToleranceInput.value);
-        if (slippageTolerance < 1 || slippageTolerance > 10 || isNaN(slippageTolerance)) {
-            slippageToleranceError.classList.remove('hidden');
-            isValid = false;
-        } else {
-            slippageToleranceError.classList.add('hidden');
-        }
+        async function saveWalletSettings() {
+            const userId = localStorage.getItem('userId');
+            if (!userId) return;
 
-        const privateKeyValid = updatePublicKey();
-        if (!privateKeyValid) {
-            isValid = false;
-        }
+            const privateKeyInput = document.getElementById('private-key-input').value.trim();
+            const positionSize = parseFloat(document.getElementById('position-size-input').value);
+            const slippageTolerance = parseFloat(document.getElementById('slippage-tolerance-input').value);
 
-        return isValid;
-    }
+            let settings = {};
+            let isValid = true;
 
-    function saveWalletSettings() {
-        if (validateSettings()) {
-            const positionSizeInput = document.getElementById('position-size-input');
-            const positionSizeDisplay = document.getElementById('position-size-display');
-            positionSizeDisplay.textContent = positionSizeInput.value + '%';
-            setActivePage('dash');
-        }
-    }
-
-    function toggleBotStatus(toggle) {
-        const statusDot = document.getElementById('status-dot');
-        const botToggle = document.getElementById('bot-toggle');
-
-        botToggle.disabled = true;
-
-        statusDot.className = 'status-dot connecting flex items-center gap-2';
-        statusDot.innerHTML = `
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="12" r="6"/>
-            </svg>
-            Linking
-        `;
-        console.log('Bot status: Linking');
-
-        setTimeout(() => {
-            if (toggle.checked) {
-                statusDot.className = 'status-dot connected flex items-center gap-2';
-                statusDot.innerHTML = `
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                        <circle cx="12" cy="12" r="6"/>
-                    </svg>
-                    Active
-                `;
-                console.log('Bot status: Active');
+            if (privateKeyInput) {
+                const keys = updatePublicKey();
+                if (!keys) {
+                    isValid = false;
+                } else {
+                    settings.publicKey = keys.publicKey;
+                    settings.privateKey = keys.privateKey;
+                }
+            } else if (currentPublicKey) {
+                settings.publicKey = currentPublicKey;
             } else {
-                statusDot.className = 'status-dot offline flex items-center gap-2';
-                statusDot.innerHTML = `
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                        <circle cx="12" cy="12" r="6"/>
-                    </svg>
-                    Inactive
-                `;
-                console.log('Bot status: Inactive');
+                document.getElementById('private-key-error').textContent = 'Private key is required for first setup.';
+                document.getElementById('private-key-error').classList.remove('hidden');
+                isValid = false;
             }
-            botToggle.disabled = false;
-        }, 2000);
-    }
 
-    function copyDonateAddress(event) {
-        event.stopPropagation();
-        const walletAddress = 'q4tqEU7BJ7GNkazQAKci7X1DBPj8jRzWyFpn6TzZBpe';
-        navigator.clipboard.writeText(walletAddress).then(() => {
-            const popup = document.querySelector('.donate-popup');
-            const walletSpan = popup.querySelector('.wallet-address');
-            const originalText = walletSpan.textContent;
-            walletSpan.textContent = 'Copied!';
-            walletSpan.style.color = '#FFA500';
-            setTimeout(() => {
-                walletSpan.textContent = originalText;
-                walletSpan.style.color = '#32CD32';
-            }, 1000);
-        }).catch(err => {
-            console.error('Failed to copy: ', err);
+            if (isNaN(positionSize) || positionSize < 2 || positionSize > 50) {
+                document.getElementById('position-size-error').classList.remove('hidden');
+                isValid = false;
+            } else {
+                document.getElementById('position-size-error').classList.add('hidden');
+                settings.positionSize = positionSize;
+            }
+
+            if (isNaN(slippageTolerance) || slippageTolerance < 1 || slippageTolerance > 10) {
+                document.getElementById('slippage-tolerance-error').classList.remove('hidden');
+                isValid = false;
+            } else {
+                document.getElementById('slippage-tolerance-error').classList.add('hidden');
+                settings.slippageTolerance = slippageTolerance;
+            }
+
+            if (!isValid) return;
+
+            try {
+                const response = await fetch('/wallet/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, ...settings }),
+                });
+                if (!response.ok) throw new Error('Failed to save wallet settings');
+                await loadDashboardData();
+                setActivePage('dash');
+            } catch (error) {
+                console.error('Error saving wallet settings:', error);
+            }
+        }
+
+        async function initializePage() {
+            const isAuthenticated = await checkAuth();
+            if (!isAuthenticated) return;
+
+            document.getElementById('main-content').classList.remove('content-hidden');
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            createChart(savedTheme);
+            setTheme(savedTheme);
+            const savedPage = localStorage.getItem('activePage') || 'dash';
+            setActivePage(savedPage);
+
+            await loadDashboardData();
+        }
+
+        document.getElementById('private-key-input').addEventListener('input', () => {
+            const keys = updatePublicKey();
+            if (keys) document.getElementById('private-key-error').classList.add('hidden');
         });
-    }
 
-    async function initializePage() {
-        const isAuthenticated = await checkAuth();
-        if (!isAuthenticated) return;
-
-        const mainContent = document.getElementById('main-content');
-        mainContent.classList.remove('content-hidden');
-
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        setTheme(savedTheme);
-        const savedPage = localStorage.getItem('activePage') || 'dash';
-        setActivePage(savedPage);
-        setStatusById(1);
-        updatePublicKey();
-        document.getElementById('private-key-input').addEventListener('input', updatePublicKey);
-    }
-
-    initializePage();
-    
-</script>
+        initializePage();
+    </script>
 </body>
 </html>

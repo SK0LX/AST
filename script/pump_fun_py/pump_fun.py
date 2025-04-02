@@ -7,28 +7,30 @@ from spl.token.instructions import (
     create_associated_token_account,
     get_associated_token_address,
 )
-from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price  # type: ignore
-from solders.instruction import Instruction, AccountMeta  # type: ignore
-from solders.message import MessageV0  # type: ignore
-from solders.transaction import VersionedTransaction  # type: ignore
-from config import client, payer_keypair, UNIT_BUDGET, UNIT_PRICE
+from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price
+from solders.instruction import Instruction, AccountMeta
+from solders.message import MessageV0
+from solders.transaction import VersionedTransaction
+from config import client, UNIT_BUDGET, UNIT_PRICE
 from constants import *
 from utils import confirm_txn, get_token_balance
 from coin_data import get_coin_data, sol_for_tokens, tokens_for_sol
 
-def buy(mint_str: str, sol_in: float = 0.01, slippage: int = 5) -> bool:
+def buy(payer_keypair, mint_str: str, sol_in: float = 0.01, slippage: int = 5) -> bool:
     try:
         print(f"Starting buy transaction for mint: {mint_str}")
+        if not payer_keypair:
+            print("Error: payer_keypair is None")
+            return False
 
         coin_data = get_coin_data(mint_str)
-        
         if not coin_data:
             print("Failed to retrieve coin data.")
             return False
 
         if coin_data.complete:
             print("Warning: This token has bonded and is only tradable on Raydium.")
-            return
+            return False
 
         MINT = coin_data.mint
         BONDING_CURVE = coin_data.bonding_curve
@@ -36,17 +38,26 @@ def buy(mint_str: str, sol_in: float = 0.01, slippage: int = 5) -> bool:
         USER = payer_keypair.pubkey()
 
         print("Fetching or creating associated token account...")
-        while True:
+        ASSOCIATED_USER = None
+        token_account_instruction = None
+        for _ in range(3):
             try:
-                ASSOCIATED_USER = client.get_token_accounts_by_owner(USER, TokenAccountOpts(MINT)).value[0].pubkey
-                token_account_instruction = None
-                print(f"Token account found: {ASSOCIATED_USER}")
-                break  # Аккаунт найден, выходим из цикла
-            except:
-                ASSOCIATED_USER = get_associated_token_address(USER, MINT)
-                token_account_instruction = create_associated_token_account(USER, USER, MINT)
-                print(f"Creating token account: {ASSOCIATED_USER}")
-                time.sleep(2)  # Ждем 2 секунды перед повторной проверкой
+                accounts = client.get_token_accounts_by_owner(USER, TokenAccountOpts(MINT)).value
+                if accounts:
+                    ASSOCIATED_USER = accounts[0].pubkey
+                    print(f"Token account found: {ASSOCIATED_USER}")
+                    break
+                else:
+                    ASSOCIATED_USER = get_associated_token_address(USER, MINT)
+                    token_account_instruction = create_associated_token_account(USER, USER, MINT)
+                    print(f"Creating token account: {ASSOCIATED_USER}")
+                    time.sleep(2)
+            except Exception as e:
+                print(f"Error fetching token account: {e}")
+                time.sleep(2)
+        if not ASSOCIATED_USER:
+            print("Failed to find or create token account after retries.")
+            return False
 
         print("Calculating transaction amounts...")
         sol_dec = 1e9
@@ -91,23 +102,24 @@ def buy(mint_str: str, sol_in: float = 0.01, slippage: int = 5) -> bool:
         instructions.append(swap_instruction)
 
         print("Compiling transaction message...")
+        blockhash_resp = client.get_latest_blockhash()
+        if not blockhash_resp.value or not blockhash_resp.value.blockhash:
+            print("Failed to get latest blockhash")
+            return False
         compiled_message = MessageV0.try_compile(
             payer_keypair.pubkey(),
             instructions,
             [],
-            client.get_latest_blockhash().value.blockhash,
+            blockhash_resp.value.blockhash,
         )
 
         print("Sending transaction...")
-        txn_sig = client.send_transaction(
-            txn=VersionedTransaction(compiled_message, [payer_keypair]),
-            opts=TxOpts(skip_preflight=True)
-        ).value
+        txn = VersionedTransaction(compiled_message, [payer_keypair])
+        txn_sig = client.send_transaction(txn, opts=TxOpts(skip_preflight=True)).value
         print(f"Transaction Signature: {txn_sig}")
 
         print("Confirming transaction...")
         confirmed = confirm_txn(txn_sig)
-        
         print(f"Transaction confirmed: {confirmed}")
         return confirmed
 
@@ -115,23 +127,25 @@ def buy(mint_str: str, sol_in: float = 0.01, slippage: int = 5) -> bool:
         print(f"Error occurred during transaction: {e}")
         return False
 
-def sell(mint_str: str, percentage: int = 100, slippage: int = 5) -> bool:
+def sell(payer_keypair, mint_str: str, percentage: int = 100, slippage: int = 5) -> bool:
     try:
         print(f"Starting sell transaction for mint: {mint_str}")
+        if not payer_keypair:
+            print("Error: payer_keypair is None")
+            return False
 
         if not (1 <= percentage <= 100):
             print("Percentage must be between 1 and 100.")
             return False
 
         coin_data = get_coin_data(mint_str)
-        
         if not coin_data:
             print("Failed to retrieve coin data.")
             return False
 
         if coin_data.complete:
             print("Warning: This token has bonded and is only tradable on Raydium.")
-            return
+            return False
 
         MINT = coin_data.mint
         BONDING_CURVE = coin_data.bonding_curve
@@ -193,23 +207,24 @@ def sell(mint_str: str, percentage: int = 100, slippage: int = 5) -> bool:
             instructions.append(close_account_instruction)
 
         print("Compiling transaction message...")
+        blockhash_resp = client.get_latest_blockhash()
+        if not blockhash_resp.value or not blockhash_resp.value.blockhash:
+            print("Failed to get latest blockhash")
+            return False
         compiled_message = MessageV0.try_compile(
             payer_keypair.pubkey(),
             instructions,
             [],
-            client.get_latest_blockhash().value.blockhash,
+            blockhash_resp.value.blockhash,
         )
 
         print("Sending transaction...")
-        txn_sig = client.send_transaction(
-            txn=VersionedTransaction(compiled_message, [payer_keypair]),
-            opts=TxOpts(skip_preflight=False)
-        ).value
+        txn = VersionedTransaction(compiled_message, [payer_keypair])
+        txn_sig = client.send_transaction(txn, opts=TxOpts(skip_preflight=False)).value
         print(f"Transaction Signature: {txn_sig}")
 
         print("Confirming transaction...")
         confirmed = confirm_txn(txn_sig)
-        
         print(f"Transaction confirmed: {confirmed}")
         return confirmed
 

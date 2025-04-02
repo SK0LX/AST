@@ -3,14 +3,16 @@
     "version": "1.0.0",
     "main": "index.js",
     "scripts": {
-      "start": "node index.js"
+        "start": "node index.js"
     },
     "dependencies": {
-      "express": "^4.18.2",
-      "pg": "^8.11.3",
-      "redis": "^4.6.7",
-      "ioredis": "^5.3.2",
-      "nodemailer": "^6.9.7",
-      "dotenv": "^16.3.1"
+        "@solana/web3.js": "^1.98.0",
+        "dotenv": "^16.3.1",
+        "express": "^4.21.2",
+        "ioredis": "^5.6.0",
+        "nodemailer": "^6.9.7",
+        "pg": "^8.11.3",
+        "redis": "^4.6.7",
+        "ws": "^8.18.1"
     }
-  }
+}
