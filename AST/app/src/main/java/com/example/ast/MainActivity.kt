@@ -1,38 +1,20 @@
 package com.example.ast
-
-import android.annotation.SuppressLint
+import NetWorkService
 import android.os.Bundle
-import android.service.autofill.RegexValidator
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import android.widget.ViewFlipper
 import androidx.activity.ComponentActivity
 import kotlinx.serialization.Serializable
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.ast.ui.theme.ASTTheme
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import okhttp3.Authenticator
-import okhttp3.Dispatcher
+
 
 class MainActivity : ComponentActivity() {
     private lateinit var viewFlipper: ViewFlipper
+    private lateinit var notificationManager: AppNotificationManager
+    private lateinit var permissionManager: PermissionManager
     companion object {
         const val SCREEN_LOGIN = 0
         const val SCREEN_REGISTER = 1
@@ -42,7 +24,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-
+        permissionManager = PermissionManager(this)
+        permissionManager.getPermission()
+        notificationManager = AppNotificationManager(this)
         viewFlipper = findViewById(R.id.flipper)
         setupLoginScreen()
         setupRegisterScreen()
@@ -86,14 +70,20 @@ class MainActivity : ComponentActivity() {
     private fun setupCodeScreen() {
         findViewById<Button>(R.id.btnCode).setOnClickListener {
             val code = findViewById<EditText>(R.id.code).text.toString()
+            notificationManager.showSimpleNotification("Урааа", "Уведомления работают!")
             if (code.length == 6) {
-                //verifyCode(code)
+                NetWorkService().fetchText("a.txt") { responseText ->
+                    runOnUiThread {
+                        if (responseText != null) {
+                            findViewById<TextView>(R.id.test).text = responseText
+                        }
+                    }
+                }
             } else {
                 Toast.makeText(this, "Введите 6 цифр", Toast.LENGTH_SHORT).show()
             }
         }
     }
-
 
     private fun validateEmail(email: String): Boolean {
         val pattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+".toRegex()
@@ -103,6 +93,5 @@ class MainActivity : ComponentActivity() {
 
 @Serializable
 data class Data(
-    val login: String,
-    val password: String
+    val login: String
 )
