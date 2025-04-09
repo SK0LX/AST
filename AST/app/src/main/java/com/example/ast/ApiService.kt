@@ -1,5 +1,6 @@
 package com.example.ast
 
+import android.provider.ContactsContract
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -11,5 +12,5 @@ interface ApiService {
     fun getText(@Path("filename") filename: String): Call<String>
 
     @POST("/auth")
-    fun sendData(@Body data: Data): Call<String>
+    fun sendData(@Body data: ContactsContract.Data): Call<String>
 }

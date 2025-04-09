@@ -18,6 +18,7 @@
         android:theme="@style/Theme.AST"
         tools:targetApi="31">
         <activity
+            android:configChanges="uiMode"
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
