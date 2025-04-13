@@ -1,6 +1,9 @@
 package com.example.ast
 
-import NetWorkService
+import AuthViewModel
+import NetworkService
+import android.content.Intent
+import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Color
@@ -12,11 +15,16 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.ViewFlipper
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import com.chaos.view.PinView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
+    private val viewModel: AuthViewModel by viewModels()
     private lateinit var viewFlipper: ViewFlipper
     private lateinit var notificationManager: AppNotificationManager
     private lateinit var permissionManager: PermissionManager
@@ -27,78 +35,122 @@ class MainActivity : AppCompatActivity() {
         const val SCREEN_MAIN = 2
         const val PREF_CURRENT_SCREEN = "current_screen"
     }
+    private val PREF_USER_ID = "USER_ID"
+    private val PREF_SESSION_TIME = "SESSION_TIME"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val prefs = getSharedPreferences("AppSettings", MODE_PRIVATE)
         isDarkTheme = prefs.getBoolean("DarkTheme", false)
         setAppTheme()
+
         notificationManager = AppNotificationManager(this)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         val savedScreen = prefs.getInt(PREF_CURRENT_SCREEN, SCREEN_LOGIN)
         viewFlipper = findViewById(R.id.flipper)
-        viewFlipper.displayedChild = savedScreen
+        val (isValidSession, userId) = checkSessionValidity(prefs)
 
-        findViewById<Button>(R.id.btnThemeToggle).setOnClickListener {
-            toggleTheme()
+        if (!isValidSession) {
+            // Показываем экран логина при невалидной сессии
+            prefs.edit().remove(PREF_USER_ID).remove(PREF_SESSION_TIME).apply()
+            viewFlipper.displayedChild = SCREEN_LOGIN
+        } else {
+            // Показываем сохраненный экран при валидной сессии
+            val savedScreen = prefs.getInt(PREF_CURRENT_SCREEN, SCREEN_LOGIN)
+            viewFlipper.displayedChild = savedScreen
         }
+
 
         findViewById<Button>(R.id.btnBack).setOnClickListener {
             viewFlipper.displayedChild = SCREEN_LOGIN
         }
 
+        findViewById<Button>(R.id.back).setOnClickListener{
+            viewFlipper.displayedChild = SCREEN_LOGIN
+        }
         setupLoginScreen()
         setupCodeScreen()
     }
 
-    override fun onPause() {
-        super.onPause()
-        saveCurrentScreen()
+    private fun checkSessionValidity(prefs: SharedPreferences): Pair<Boolean, String?> {
+        val userId = prefs.getString(PREF_USER_ID, null)
+        val sessionTime = prefs.getLong(PREF_SESSION_TIME, 0)
+        val currentTime = System.currentTimeMillis()
+
+        return Pair(
+            userId != null && (currentTime - sessionTime) <= 3600000, // 1 час = 3,600,000 мс
+            userId
+        )
     }
 
+    private fun updateUI(data: DashboardResponse) {
+        findViewById<TextView>(R.id.tvBalanceValue).text = data.balance
+        findViewById<TextView>(R.id.tvAddressValue).text = data.publicKey
+        findViewById<TextView>(R.id.tvPositionValue).text = data.positionSize.toString()
+        findViewById<TextView>(R.id.tvPercentage).text = "${data.successRate}%"
+        findViewById<TextView>(R.id.textView14).text = data.tradesToday.toString()
+        findViewById<TextView>(R.id.textView16).text = data.tradesHourly.toString()
+        findViewById<TextView>(R.id.textView18).text = data.totalTrades.toString()
+    }
 
     private fun setupLoginScreen() {
-        val btnLogin = findViewById<Button>(R.id.btnLogin)
-        val checkBox = findViewById<CheckBox>(R.id.checkBox)
-        val etEmail = findViewById<EditText>(R.id.etEmail)
-        btnLogin.isEnabled = checkBox.isChecked
-        checkBox.setOnCheckedChangeListener { _, isChecked ->
-            btnLogin.isEnabled = isChecked
-        }
-
-        btnLogin.setOnClickListener {
-            val email = etEmail.text.toString()
+        findViewById<Button>(R.id.btnLogin).setOnClickListener {
+            val email = findViewById<EditText>(R.id.etEmail).text.toString()
             if (validateEmail(email)) {
-                viewFlipper.displayedChild = SCREEN_CODE
-                sendCodeToEmail(email)
+                CoroutineScope(Dispatchers.Main).launch {
+                    viewModel.sendEmail(email) { success, message ->
+                        if (success) {
+                            viewFlipper.displayedChild = SCREEN_CODE
+                            Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun loadDashboardData(userId: String) {
+        CoroutineScope(Dispatchers.Main).launch {
+            viewModel.loadDashboardData(userId) { success, result ->
+                if (success) {
+                    if (result != null) {
+                        updateUI(result)
+                    }
+                } else {
+                    Toast.makeText(this@MainActivity, "Не удалось загркзить данные.", Toast.LENGTH_LONG).show()
+                }
             }
         }
     }
 
     private fun setupCodeScreen() {
         findViewById<Button>(R.id.btnCode).setOnClickListener {
-            val pin = findViewById<PinView>(R.id.pinView)
-            val code = pin.text.toString()
-            notificationManager.showSimpleNotification(code, "Уведомления работают!")
+            val code = findViewById<PinView>(R.id.pinView).text.toString()
             if (code.length == 6) {
-                //TODO сделать переход в Main
-                viewFlipper.displayedChild = SCREEN_MAIN
-                saveCurrentScreen()
-            } else {
-                Toast.makeText(this, "Введите 6 цифр", Toast.LENGTH_SHORT).show()
+                CoroutineScope(Dispatchers.Main).launch {
+                    viewModel.verifyCode(code) { success, userId ->
+                        if (success && userId != null) {
+                            getSharedPreferences("AppSettings", MODE_PRIVATE)
+                                .edit()
+                                .putString(PREF_USER_ID, userId)
+                                .apply()
+                            viewFlipper.displayedChild = SCREEN_MAIN
+                            loadDashboardData(userId)
+                        } else {
+                            Toast.makeText(this@MainActivity, "Ошибка верификации", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
             }
         }
     }
 
-    private fun toggleTheme() {
-        isDarkTheme = !isDarkTheme
-        getSharedPreferences("AppSettings", MODE_PRIVATE)
-            .edit()
-            .putBoolean("DarkTheme", isDarkTheme)
-            .apply()
 
-        setAppTheme()
-        recreate()
+    override fun onPause() {
+        super.onPause()
+        saveCurrentScreen()
     }
 
     private fun saveCurrentScreen() {
@@ -106,18 +158,6 @@ class MainActivity : AppCompatActivity() {
             .edit()
             .putInt(PREF_CURRENT_SCREEN, viewFlipper.displayedChild)
             .apply()
-    }
-
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        // Обновляем элементы, зависящие от темы
-        updateThemeDependentViews()
-    }
-
-    private fun updateThemeDependentViews() {
-        val textColor = if (isDarkTheme) Color.WHITE else Color.BLACK
-        findViewById<TextView>(R.id.checkBox).setTextColor(textColor)
     }
 
     private fun setAppTheme() {
@@ -128,9 +168,6 @@ class MainActivity : AppCompatActivity() {
             else AppCompatDelegate.MODE_NIGHT_NO
         )
     }
-
-
-
 
     private fun validateEmail(email: String): Boolean {
         return Patterns.EMAIL_ADDRESS.matcher(email).matches()

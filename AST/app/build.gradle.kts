@@ -51,6 +51,10 @@ android {
 }
 
 dependencies {
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.google.code.gson:gson:2.8.9")
     implementation("io.github.chaosleung:pinview:1.4.4")
     implementation("com.google.android.material:material:1.10.0")
     implementation("com.squareup.retrofit2:retrofit:2.4.0")
