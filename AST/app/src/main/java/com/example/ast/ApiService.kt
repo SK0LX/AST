@@ -9,17 +9,17 @@ import retrofit2.http.POST
 import retrofit2.http.Query
 
 interface ApiService {
-    // Авторизация
+    // Авторизация+
     @POST("/auth")
     suspend fun auth(@Body request: AuthRequest): AuthResponse
 
-    // Верификация OTP
+    // Верификация OTP+
     @POST("/verify")
     suspend fun verify(@Body request: VerifyRequest): VerifyResponse
 
     // Работа с кошельком
-    @POST("/wallet/add")
-    fun addWallet(@Body data: AddWalletRequest): Call<Unit>
+    @POST("wallet/add")
+    suspend fun addWallet(@Body request: AddWalletRequest): Response<Unit>
 
     // Управление ботом
     @POST("/bot/toggle")
@@ -28,7 +28,7 @@ interface ApiService {
     @GET("/check-auth")
     fun checkAuth(@Query("userId") userId: String): Call<CheckAuthResponse>
 
-    // Данные дашборда
+    // Данные дашборда+
     @GET("/dashboard")
     suspend fun getDashboard(
         @Query("userId") userId: String
@@ -52,10 +52,15 @@ data class VerifyResponse(
 
 // Wallet.kt
 data class AddWalletRequest(
+    @SerializedName("userId")
     val userId: String,
+    @SerializedName("publicKey")
     val publicKey: String?,
+    @SerializedName("privateKey")
     val privateKey: String?,
+    @SerializedName("positionSize")
     val positionSize: Int,
+    @SerializedName("slippageTolerance")
     val slippageTolerance: Int
 )
 

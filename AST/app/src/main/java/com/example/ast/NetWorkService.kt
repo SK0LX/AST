@@ -10,6 +10,7 @@ import com.example.ast.VerifyResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -44,15 +45,26 @@ class NetworkService {
 
 
     // Добавление кошелька
-    fun addWallet(request: AddWalletRequest, callback: (Boolean) -> Unit) {
-        api.addWallet(request).enqueue(object : Callback<Unit> {
-            override fun onResponse(call: Call<Unit>, response: Response<Unit>) {
-                callback(response.isSuccessful)
+    suspend fun addWallet(request: AddWalletRequest, callback: (Boolean, String?) -> Unit) {
+        try {
+            val response = api.addWallet(request)
+            if (response.isSuccessful) {
+                callback(true, null)
+            } else {
+                // Парсим тело ошибки
+                val errorBody = response.errorBody()?.string()
+                val errorMessage = try {
+                    Json.decodeFromString<Map<String, String>>(errorBody ?: "")["error"]
+                        ?: "Unknown error"
+                } catch (e: Exception) {
+                    "Error code: ${response.code()}"
+                }
+                callback(false, errorMessage)
             }
-            override fun onFailure(call: Call<Unit>, t: Throwable) {
-                callback(false)
-            }
-        })
+        } catch (e: Exception) {
+            Log.e("Network", "Wallet update error", e)
+            callback(false, "Network error: ${e.message}")
+        }
     }
 
     // Получение данных дашборда

@@ -1,5 +1,6 @@
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.ast.AddWalletRequest
 import com.example.ast.DashboardResponse
 import kotlinx.coroutines.launch
 
@@ -46,6 +47,33 @@ class AuthViewModel : ViewModel() {
                 }
 
             }
+        }
+    }
+
+    suspend fun updateWallet(
+        userId: String,
+        publicKey: String?,  // Исправлен порядок параметров
+        privateKey: String?,
+        positionSize: Int,
+        slippageTolerance: Int,
+        callback: (Boolean, String?) -> Unit  // Добавлен параметр для ошибки
+    ) {
+        if ((publicKey != null && privateKey == null) ||
+            (publicKey == null && privateKey != null)) {
+            callback(false, "Both keys must be provided together")
+            return
+        }
+
+        val request = AddWalletRequest(
+            userId = userId,
+            publicKey = publicKey,
+            privateKey = privateKey,
+            positionSize = positionSize,
+            slippageTolerance = slippageTolerance
+        )
+
+        networkService.addWallet(request) { success, errorMessage ->
+            callback(success, errorMessage)
         }
     }
 }

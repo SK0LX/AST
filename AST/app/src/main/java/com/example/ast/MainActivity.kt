@@ -1,16 +1,12 @@
 package com.example.ast
 
 import AuthViewModel
-import NetworkService
-import android.content.Intent
+import android.app.Dialog
 import android.content.SharedPreferences
-import android.content.res.ColorStateList
-import android.content.res.Configuration
-import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.util.Patterns
 import android.widget.Button
-import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
@@ -34,9 +30,9 @@ class MainActivity : AppCompatActivity() {
         const val SCREEN_CODE = 1
         const val SCREEN_MAIN = 2
         const val PREF_CURRENT_SCREEN = "current_screen"
+        private var PREF_USER_ID = "USER_ID"
+        private var PREF_SESSION_TIME = "SESSION_TIME"
     }
-    private val PREF_USER_ID = "USER_ID"
-    private val PREF_SESSION_TIME = "SESSION_TIME"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val prefs = getSharedPreferences("AppSettings", MODE_PRIVATE)
@@ -58,6 +54,7 @@ class MainActivity : AppCompatActivity() {
             // Показываем сохраненный экран при валидной сессии
             val savedScreen = prefs.getInt(PREF_CURRENT_SCREEN, SCREEN_LOGIN)
             viewFlipper.displayedChild = savedScreen
+            loadDashboardData(prefs.getString(PREF_USER_ID, null).toString())
         }
 
 
@@ -68,6 +65,11 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.back).setOnClickListener{
             viewFlipper.displayedChild = SCREEN_LOGIN
         }
+
+        findViewById<Button>(R.id.btnEditSettings).setOnClickListener{
+            showWalletDialog()
+        }
+
         setupLoginScreen()
         setupCodeScreen()
     }
@@ -85,9 +87,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateUI(data: DashboardResponse) {
         findViewById<TextView>(R.id.tvBalanceValue).text = data.balance
-        findViewById<TextView>(R.id.tvAddressValue).text = data.publicKey
+        findViewById<TextView>(R.id.tvAddressValue).text = shortenKey(data.publicKey)
+        findViewById<TextView>(R.id.tvPrivateKeyValue).text = shortenKey(data.privateKeyPreview)
         findViewById<TextView>(R.id.tvPositionValue).text = data.positionSize.toString()
         findViewById<TextView>(R.id.tvPercentage).text = "${data.successRate}%"
+
         findViewById<TextView>(R.id.textView14).text = data.tradesToday.toString()
         findViewById<TextView>(R.id.textView16).text = data.tradesHourly.toString()
         findViewById<TextView>(R.id.textView18).text = data.totalTrades.toString()
@@ -135,6 +139,7 @@ class MainActivity : AppCompatActivity() {
                             getSharedPreferences("AppSettings", MODE_PRIVATE)
                                 .edit()
                                 .putString(PREF_USER_ID, userId)
+                                .putLong(PREF_SESSION_TIME, System.currentTimeMillis())
                                 .apply()
                             viewFlipper.displayedChild = SCREEN_MAIN
                             loadDashboardData(userId)
@@ -175,5 +180,53 @@ class MainActivity : AppCompatActivity() {
 
     private fun sendCodeToEmail(email: String) {
         Toast.makeText(this, "Код отправлен на $email", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun showWalletDialog() {
+        val dialog = Dialog(this)
+        dialog.setContentView(R.layout.dialog_fragment)
+        dialog.setCancelable(true)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        val etPrivateKey = dialog.findViewById<EditText>(R.id.etPrivateKey)
+        val etPublicKey = dialog.findViewById<EditText>(R.id.etPrimaryWalletAddress)
+        val etPositionSize = dialog.findViewById<EditText>(R.id.etPositionSize)
+        val etSlippage = dialog.findViewById<EditText>(R.id.etSlippageTolerance)
+        val btnSave = dialog.findViewById<Button>(R.id.btnSaveChanges)
+        btnSave.setOnClickListener {
+            val privateKey = etPrivateKey.text.toString().takeIf { it.isNotEmpty() }
+            val publicKey = etPublicKey.text.toString().takeIf { it.isNotEmpty() }
+            val positionSize = etPositionSize.text.toString().toIntOrNull() ?: 0
+            val slippage = etSlippage.text.toString().toIntOrNull() ?: 0
+
+            CoroutineScope(Dispatchers.Main).launch {
+                viewModel.updateWallet(
+                    userId = getSharedPreferences("AppSettings", MODE_PRIVATE).getString(PREF_USER_ID, null)
+                        .toString(),
+                    publicKey = publicKey,
+                    privateKey = privateKey,
+                    positionSize = positionSize,
+                    slippageTolerance = slippage
+                ) { success, errorMessage ->
+                    if (success) {
+                        loadDashboardData(getSharedPreferences("AppSettings", MODE_PRIVATE).getString(PREF_USER_ID, null)
+                            .toString())
+                        Toast.makeText(this@MainActivity, "Успех", Toast.LENGTH_LONG).show()
+                    } else {
+                        val message = errorMessage ?: "Unknown error"
+                        Toast.makeText(this@MainActivity, "Ошибка: $message", Toast.LENGTH_LONG).show()
+                        Log.e("WalletUpdate", "Error: $message")
+                    }
+                }
+            }
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    fun shortenKey(fullKey: String, firstChars: Int = 5, lastChars: Int = 3): String {
+        if (fullKey.length <= firstChars + lastChars) return fullKey
+        return "${fullKey.take(firstChars)}...${fullKey.takeLast(lastChars)}"
     }
 }
