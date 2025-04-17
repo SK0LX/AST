@@ -78,15 +78,28 @@ class NetworkService {
     }
 
     // Переключение бота
-    fun toggleBot(request: ToggleRequest, callback: (Boolean) -> Unit) {
-        api.toggleBot(request).enqueue(object : Callback<Unit> {
-            override fun onResponse(call: Call<Unit>, response: Response<Unit>) {
-                callback(response.isSuccessful)
+    suspend fun toggleBot(
+        request: ToggleRequest,
+        callback: (Boolean, String?) -> Unit
+    ) {
+        try {
+            val response = api.toggleBot(request)
+            if (response.isSuccessful) {
+                callback(true, null)
+            } else {
+                val errorBody = response.errorBody()?.string()
+                val errorMessage = try {
+                    Json.decodeFromString<Map<String, String>>(errorBody ?: "")["error"]
+                        ?: "Unknown error"
+                } catch (e: Exception) {
+                    "Error code: ${response.code()}"
+                }
+                callback(false, errorMessage)
             }
-            override fun onFailure(call: Call<Unit>, t: Throwable) {
-                callback(false)
-            }
-        })
+        } catch (e: Exception) {
+            Log.e("Network", "Toggle bot error", e)
+            callback(false, "Network error: ${e.message}")
+        }
     }
 
     suspend fun verify(

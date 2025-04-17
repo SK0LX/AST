@@ -23,7 +23,7 @@ interface ApiService {
 
     // Управление ботом
     @POST("/bot/toggle")
-    fun toggleBot(@Body data: ToggleRequest): Call<Unit>
+    suspend fun toggleBot(@Body request: ToggleRequest): Response<Unit>
 
     @GET("/check-auth")
     fun checkAuth(@Query("userId") userId: String): Call<CheckAuthResponse>
@@ -40,6 +40,7 @@ interface ApiService {
 // Auth.kt
 data class AuthRequest(val email: String)
 data class AuthResponse(val success: Boolean, val message: String)
+
 
 data class VerifyRequest(val email: String, val otp: String)
 data class VerifyResponse(
@@ -65,8 +66,11 @@ data class AddWalletRequest(
 )
 
 data class ToggleRequest(
+    @SerializedName("userId")
     val userId: String,
+    @SerializedName("publicKey")
     val publicKey: String,
+    @SerializedName("isActive")
     val isActive: Boolean
 )
 
@@ -77,7 +81,7 @@ data class DashboardResponse(
     val balance: String,
 
     @SerializedName("publicKey")
-    val publicKey: String,
+    var publicKey: String,
 
     @SerializedName("privateKeyPreview")
     val privateKeyPreview: String,

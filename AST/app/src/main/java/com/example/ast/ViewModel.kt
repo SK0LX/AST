@@ -2,6 +2,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ast.AddWalletRequest
 import com.example.ast.DashboardResponse
+import com.example.ast.ToggleRequest
 import kotlinx.coroutines.launch
 
 class AuthViewModel : ViewModel() {
@@ -74,6 +75,20 @@ class AuthViewModel : ViewModel() {
 
         networkService.addWallet(request) { success, errorMessage ->
             callback(success, errorMessage)
+        }
+    }
+
+    fun toggleBot(
+        userId: String,
+        publicKey: String,
+        isActive: Boolean,
+        callback: (Boolean, String?) -> Unit
+    ) {
+        viewModelScope.launch {
+            val request = ToggleRequest(userId, publicKey, isActive)
+            networkService.toggleBot(request) { success, errorMessage ->
+                callback(success, errorMessage)
+            }
         }
     }
 }

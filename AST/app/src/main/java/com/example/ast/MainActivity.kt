@@ -8,6 +8,7 @@ import android.util.Log
 import android.util.Patterns
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.ViewFlipper
@@ -25,6 +26,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var notificationManager: AppNotificationManager
     private lateinit var permissionManager: PermissionManager
     private var isDarkTheme = false
+    private var publicKey = ""
     companion object {
         const val SCREEN_LOGIN = 0
         const val SCREEN_CODE = 1
@@ -70,6 +72,10 @@ class MainActivity : AppCompatActivity() {
             showWalletDialog()
         }
 
+        findViewById<Switch>(R.id.switch1).setOnCheckedChangeListener { btn, isCheked ->
+            activateBot(btn, isCheked)
+        }
+
         setupLoginScreen()
         setupCodeScreen()
     }
@@ -91,7 +97,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvPrivateKeyValue).text = shortenKey(data.privateKeyPreview)
         findViewById<TextView>(R.id.tvPositionValue).text = data.positionSize.toString()
         findViewById<TextView>(R.id.tvPercentage).text = "${data.successRate}%"
-
+        this.publicKey = data.publicKey
         findViewById<TextView>(R.id.textView14).text = data.tradesToday.toString()
         findViewById<TextView>(R.id.textView16).text = data.tradesHourly.toString()
         findViewById<TextView>(R.id.textView18).text = data.totalTrades.toString()
@@ -228,5 +234,27 @@ class MainActivity : AppCompatActivity() {
     fun shortenKey(fullKey: String, firstChars: Int = 5, lastChars: Int = 3): String {
         if (fullKey.length <= firstChars + lastChars) return fullKey
         return "${fullKey.take(firstChars)}...${fullKey.takeLast(lastChars)}"
+    }
+
+    fun activateBot(btn:Button, isCheked:Boolean) {
+        btn.isActivated = false
+        val userId = getSharedPreferences("AppSettings", MODE_PRIVATE).getString(PREF_USER_ID, null)
+            .toString()
+        val publicKey = this.publicKey
+        CoroutineScope(Dispatchers.Main).launch {
+            viewModel.toggleBot(userId, publicKey, isCheked) { success, message ->
+                if (success) {
+                    btn.isActivated = true
+                    if (isCheked){
+                        Toast.makeText(this@MainActivity, "Бот запущен", Toast.LENGTH_SHORT).show()
+                    } else{
+                        Toast.makeText(this@MainActivity, "Бот выключен", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    btn.isActivated = true
+                    Toast.makeText(this@MainActivity, "Ошибка: $message", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 }
