@@ -6,8 +6,11 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.util.Patterns
+import android.view.View
+import android.view.animation.AnimationUtils
 import android.widget.Button
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
@@ -15,9 +18,21 @@ import android.widget.ViewFlipper
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
 import com.chaos.view.PinView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import kotlin.math.abs
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -27,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var permissionManager: PermissionManager
     private var isDarkTheme = false
     private var publicKey = ""
+    private var refreshJob: Job? = null
     companion object {
         const val SCREEN_LOGIN = 0
         const val SCREEN_CODE = 1
@@ -101,7 +117,87 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.textView14).text = data.tradesToday.toString()
         findViewById<TextView>(R.id.textView16).text = data.tradesHourly.toString()
         findViewById<TextView>(R.id.textView18).text = data.totalTrades.toString()
+
+
+        val inputFmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val dispFmt  = SimpleDateFormat("MMM dd",   Locale.US)
+
+        val pnlItems = data.pnl.mapNotNull {
+            inputFmt.parse(it.date)?.let { d ->
+                PnlItem(dispFmt.format(d).uppercase(Locale.US), it.value.toFloat())
+            }
+        }
+
+        // Если нет ни одного ненулевого значения, скрываем карточку
+        val hasAny = pnlItems
+            .groupBy { it.date }
+            .values
+            .map { entries -> entries.sumOf { it.value.toDouble() }.toFloat() }
+            .any { it != 0f }
+
+        findViewById<CardView>(R.id.cardPNL).visibility =
+            if (hasAny) View.VISIBLE else View.GONE
+
+        if (hasAny) setupPnlChart(pnlItems)
     }
+
+    private fun setupPnlChart(data: List<PnlItem>) {
+        val container = findViewById<LinearLayout>(R.id.pnlContainer)
+        container.removeAllViews()
+
+        // 1) Суммируем по дате
+        val summed = data.groupBy { it.date }
+            .mapValues { (_, list) -> list.sumOf { it.value.toDouble() }.toFloat() }
+
+        // 2) Генерируем ровно 14 дней назад, в том же формате UPPERCASE
+        val cal = Calendar.getInstance()
+        val df  = SimpleDateFormat("MMM dd", Locale.US)
+        val last14 = (13 downTo 0).map { offset ->
+            cal.time = Date()
+            cal.add(Calendar.DAY_OF_YEAR, -offset)
+            df.format(cal.time).uppercase(Locale.US)
+        }
+
+        // 3) Нормировка по модулю
+        val maxAbs   = (summed.values.maxOfOrNull { abs(it) } ?: 0f).coerceAtLeast(0.00001f)
+        val maxBarPx = 200.dpToPx().toInt()
+        val minBarPx =   8.dpToPx().toInt()
+
+        // 4) Рисуем все 14 точек
+        last14.forEach { day ->
+            val view   = layoutInflater.inflate(R.layout.item_pnl, container, false)
+            val bar    = view.findViewById<View>(R.id.bar)
+            val tvDate = view.findViewById<TextView>(R.id.tvDate)
+            val tvVal  = view.findViewById<TextView>(R.id.tvValue)
+
+            val value = summed[day] ?: 0f
+
+            // Значение (пусто, если 0; с минусом, если <0)
+            tvVal.text = if (value == 0f) ""
+            else "%.4f".format(value).trimEnd('0').trimEnd('.')
+
+            // Дата — гарантированно видна
+            tvDate.text = day
+
+            // Цвет
+            val colorRes = if (value >= 0f) R.color.green else R.color.red
+            bar.background.setTint(ContextCompat.getColor(this, colorRes))
+
+            // Высота
+            val heightPx = ((abs(value) / maxAbs) * maxBarPx)
+                .toInt()
+                .coerceAtLeast(minBarPx)
+                .coerceAtMost(maxBarPx)
+            bar.layoutParams.height = heightPx
+
+            container.addView(view)
+        }
+    }
+
+    fun Int.dpToPx(): Float = this * resources.displayMetrics.density
+
+    data class PnlItem(val date: String, val value: Float)
+
 
     private fun setupLoginScreen() {
         findViewById<Button>(R.id.btnLogin).setOnClickListener {
@@ -156,12 +252,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-    }
-
-
-    override fun onPause() {
-        super.onPause()
-        saveCurrentScreen()
     }
 
     private fun saveCurrentScreen() {
@@ -256,5 +346,28 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Стартуем обновление каждые 10 секунд, но только если показывается экран MAIN
+        val prefs = getSharedPreferences("AppSettings", MODE_PRIVATE)
+        val userId = prefs.getString(PREF_USER_ID, null)
+        refreshJob = lifecycleScope.launch {
+            while (isActive) {
+                // Проверяем, что сейчас именно основной экран
+                if (viewFlipper.displayedChild == SCREEN_MAIN && !userId.isNullOrEmpty()) {
+                    loadDashboardData(userId)
+                }
+                delay(10_000L)
+            }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Отменяем обновления, когда Activity не на переднем плане
+        refreshJob?.cancel()
+        saveCurrentScreen()
     }
 }

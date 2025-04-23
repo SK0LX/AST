@@ -1,0 +1,37 @@
+<!-- res/layout/item_pnl.xml -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="48dp"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="bottom"
+    android:layout_marginHorizontal="4dp">
+
+    <!-- 1) Значение PnL -->
+<TextView
+android:id="@+id/tvValue"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:gravity="center"
+android:textSize="12sp"
+android:textColor="?attr/colorOnBackground"
+android:layout_marginBottom="4dp"/>
+
+    <!-- 2) Столбик -->
+<View
+android:id="@+id/bar"
+android:layout_width="match_parent"
+android:layout_height="0dp"
+android:layout_gravity="center_horizontal"
+android:background="@drawable/rounded_bar"/>
+
+    <!-- 3) Дата -->
+<TextView
+android:id="@+id/tvDate"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:gravity="center"
+android:textSize="12sp"
+android:textColor="?attr/colorOnBackground"
+android:layout_marginTop="4dp"/>
+</LinearLayout>
