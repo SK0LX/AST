@@ -17,8 +17,10 @@ from coin_data import get_coin_data, sol_for_tokens, tokens_for_sol
 
 EXPECTED_DISCRIMINATOR = struct.pack("<Q", 6966180631402821399)
 TOKEN_DECIMALS = 6
-WEBSOCKET_TIMEOUT = 30
+WEBSOCKET_TIMEOUT = 60
 RECONNECT_DELAY = 5
+CURVE_STATE_RETRIES = 5
+CURVE_STATE_DELAY = 3
 
 TAKE_PROFIT = 1.24  # +24%
 STOP_LOSS = 0.92    # -8%
@@ -83,21 +85,26 @@ def get_pump_curve_state(curve_address: str) -> BondingCurveState:
         "params": [str(curve_address), {"encoding": "base64"}]
     }
 
-    for attempt in range(3):
-        response = requests.post(RPC, json=payload).json()
-        value = response.get("result", {}).get("value")
+    for attempt in range(CURVE_STATE_RETRIES):
+        try:
+            response = requests.post(RPC, json=payload)
+            response.raise_for_status()
+            data = response.json()
+            value = data.get("result", {}).get("value")
 
-        if value and "data" in value and value["data"]:
-            data_b64 = value["data"][0]
-            data = base64.b64decode(data_b64)
+            if value and "data" in value and value["data"]:
+                data_b64 = value["data"][0]
+                decoded_data = base64.b64decode(data_b64)
 
-            if data[:8] != EXPECTED_DISCRIMINATOR:
-                raise ValueError("Invalid curve state discriminator")
+                if decoded_data[:8] != EXPECTED_DISCRIMINATOR:
+                    raise ValueError(f"Invalid curve state discriminator for {curve_address}")
 
-            return BondingCurveState(data)
+                return BondingCurveState(decoded_data)
 
-        print(f"Warning: No data for bonding curve {curve_address}, attempt {attempt + 1}/3")
-        time.sleep(2)
+            print(f"No data for bonding curve {curve_address}, attempt {attempt + 1}/{CURVE_STATE_RETRIES}")
+        except Exception as e:
+            print(f"Error fetching curve state for {curve_address}: {e}")
+        time.sleep(CURVE_STATE_DELAY)
 
     raise ValueError(f"Failed to get valid bonding curve data for {curve_address}")
 
@@ -105,7 +112,6 @@ def get_token_price(curve_address: str) -> float:
     curve_state = get_pump_curve_state(curve_address)
     if curve_state.virtual_token_reserves <= 0 or curve_state.virtual_sol_reserves <= 0:
         raise ValueError("Invalid reserve state")
-
     return (curve_state.virtual_sol_reserves / LAMPORTS_PER_SOL) / (curve_state.virtual_token_reserves / 10 ** TOKEN_DECIMALS)
 
 def load_idl(file_path):
@@ -114,7 +120,7 @@ def load_idl(file_path):
 
 def decode_create_instruction(ix_data, ix_def, accounts):
     args = {}
-    offset = 8  # Skip 8-byte discriminator
+    offset = 8
 
     for arg in ix_def['args']:
         if arg['type'] == 'string':
@@ -128,8 +134,6 @@ def decode_create_instruction(ix_data, ix_def, accounts):
         else:
             raise ValueError(f"Unsupported type: {arg['type']}")
         
-        args[arg['name']] = value
-
     args['mint'] = str(accounts[0])
     args['bondingCurve'] = str(accounts[2])
     args['associatedBondingCurve'] = str(accounts[3])
@@ -137,7 +141,22 @@ def decode_create_instruction(ix_data, ix_def, accounts):
 
     return args
 
-async def listen_for_create_transaction(websocket):
+async def process_transaction(tx, idl):
+    tx_data_decoded = base64.b64decode(tx['transaction'][0])
+    transaction = VersionedTransaction.from_bytes(tx_data_decoded)
+    
+    for ix in transaction.message.instructions:
+        if str(transaction.message.account_keys[ix.program_id_index]) == str(PUMP_PROGRAM):
+            ix_data = bytes(ix.data)
+            discriminator = struct.unpack('<Q', ix_data[:8])[0]
+
+            if discriminator == 8576854823835016728:
+                create_ix = next(instr for instr in idl['instructions'] if instr['name'] == 'create')
+                account_keys = [str(transaction.message.account_keys[index]) for index in ix.accounts]
+                return decode_create_instruction(ix_data, create_ix, account_keys)
+    return None
+
+async def listen_for_create_transaction():
     idl = load_idl('pump_fun_idl.json')
     subscription_message = json.dumps({
         "jsonrpc": "2.0",
@@ -154,118 +173,92 @@ async def listen_for_create_transaction(websocket):
             }
         ]
     })
-    await websocket.send(subscription_message)
-    print(f"Subscribed to blocks mentioning program: {PUMP_PROGRAM}")
 
     while True:
         try:
-            response = await asyncio.wait_for(websocket.recv(), timeout=WEBSOCKET_TIMEOUT)
-            data = json.loads(response)
+            async with websockets.connect(WSS_ENDPOINT, ping_interval=20, ping_timeout=20) as websocket:
+                await websocket.send(subscription_message)
+                print(f"Subscribed to blocks mentioning program: {PUMP_PROGRAM}")
 
-            if 'method' in data and data['method'] == 'blockNotification':
-                block = data['params']['result']['value']['block']
-                for tx in block.get('transactions', []):
-                    tx_data_decoded = base64.b64decode(tx['transaction'][0])
-                    transaction = VersionedTransaction.from_bytes(tx_data_decoded)
+                while True:
+                    response = await asyncio.wait_for(websocket.recv(), timeout=WEBSOCKET_TIMEOUT)
+                    print(f"Received WebSocket message: {response[:100]}...")
+                    data = json.loads(response)
 
-                    for ix in transaction.message.instructions:
-                        if str(transaction.message.account_keys[ix.program_id_index]) == str(PUMP_PROGRAM):
-                            ix_data = bytes(ix.data)
-                            discriminator = struct.unpack('<Q', ix_data[:8])[0]
+                    if 'method' in data and data['method'] == 'blockNotification':
+                        block = data['params']['result']['value']['block']
+                        print(f"Processing block with {len(block.get('transactions', []))} transactions")
+                        
+                        for tx in block.get('transactions', []):
+                            result = await process_transaction(tx, idl)
+                            if result:
+                                yield result
 
-                            if discriminator == 8576854823835016728:
-                                create_ix = next(instr for instr in idl['instructions'] if instr['name'] == 'create')
-                                account_keys = [str(transaction.message.account_keys[index]) for index in ix.accounts]
-                                decoded_args = decode_create_instruction(ix_data, create_ix, account_keys)
+        except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosedError) as e:
+            print(f"WebSocket error: {e}. Reconnecting in {RECONNECT_DELAY} seconds...")
+            await asyncio.sleep(RECONNECT_DELAY)
+        except Exception as e:
+            print(f"Unexpected error in WebSocket: {e}")
+            await asyncio.sleep(RECONNECT_DELAY)
 
-                                return decoded_args
+async def execute_trade(mint, bonding_curve, position_size, trade_history):
+    delay1, delay2 = generate_times()
+    await asyncio.sleep(delay1)
 
-        except asyncio.TimeoutError:
-            print("WebSocket timeout, reconnecting...")
-            break
-        except websockets.exceptions.ConnectionClosedError as e:
-            print(f"WebSocket connection closed: {e}. Reconnecting...")
-            break
+    try:
+        buy_price = get_token_price(bonding_curve)
+    except ValueError as e:
+        print(f"Skipping trade for {mint} due to {e}")
+        return
+
+    print(f"Emulating buy for {mint} with {position_size:.6f} SOL")
+    min_price, max_price = generate_price(buy_price)
+    start_price = buy_price
+
+    tp_price = buy_price * TAKE_PROFIT
+    sl_price = buy_price * STOP_LOSS
+    print(f"Bought at {buy_price}. Target TP: {tp_price}, SL: {sl_price}")
+    start_time = time.time()
+
+    while True:
+        await asyncio.sleep(5)
+        try:
+            current_price = get_token_price(bonding_curve)
+        except ValueError as e:
+            print(f"Error fetching current price for {mint}: {e}")
+            continue
+
+        print(f"Current price: {current_price}")
+
+        if current_price >= tp_price:
+            print(f"\033[92mTP reached! Selling at {current_price}\033[0m")
+            profit = position_size * (current_price / buy_price - 1)
+            update_balance(profit)
+            price_diff = (current_price - start_price) / start_price
+            record_trade(trade_history, min_price, max_price, delay1, delay2, price_diff)
+            return
+
+        if current_price <= sl_price:
+            print(f"\033[91mSL reached! Selling at {current_price}\033[0m")
+            loss = position_size * (current_price / buy_price - 1)
+            update_balance(loss)
+            price_diff = (current_price - start_price) / start_price
+            record_trade(trade_history, min_price, max_price, delay1, delay2, price_diff)
+            return
+
+        if time.time() - start_time >= delay2:
+            print(f"\033[93mTimeout reached! Selling at {current_price}\033[0m")
+            profit_loss = position_size * (current_price / buy_price - 1)
+            update_balance(profit_loss)
+            price_diff = (current_price - start_price) / start_price
+            record_trade(trade_history, min_price, max_price, delay1, delay2, price_diff)
+            return
 
 async def trade(user_id, public_key, payer_keypair, position_size, slippage_tolerance, trade_history):
-    print(f"Starting trade cycle for user {user_id}, wallet {public_key}")
-    try:
-        async with websockets.connect(WSS_ENDPOINT, ping_interval=20, ping_timeout=10) as websocket:
-            args = await listen_for_create_transaction(websocket)
-            if not args:
-                return
-
-            mint = args['mint']
-            bonding_curve = args['bondingCurve']
-            associated_bonding_curve = args['associatedBondingCurve']
-
-            print(bonding_curve)
-
-            delay1, delay2 = generate_times()
-            await asyncio.sleep(delay1)
-
-            mint_pubkey = str(Pubkey.from_string(mint))
-
-            # Эмуляция покупки
-            try:
-                buy_price = get_token_price(bonding_curve)
-            except ValueError as e:
-                print(f"Skipping trade for {mint} due to {e}")
-                return
-
-            print(buy_price)
-
-            print(f"Emulating buy for {mint} with {position_size:.6f} SOL")
-            # Не вызываем update_balance здесь, только логируем покупку
-            min_price, max_price = generate_price(buy_price)
-            start_price = buy_price
-
-            tp_price = buy_price * TAKE_PROFIT
-            sl_price = buy_price * STOP_LOSS
-            print(f"Bought at {buy_price}. Target TP: {tp_price}, SL: {sl_price}")
-            start_time = time.time()
-
-            while True:
-                await asyncio.sleep(5)
-                try:
-                    current_price = get_token_price(bonding_curve)
-                except ValueError as e:
-                    print(f"Error fetching current price for {mint}: {e}")
-                    continue
-
-                print(f"Current price: {current_price}")
-
-                if current_price >= tp_price:
-                    print(f"\033[92mTP reached! Selling at {current_price}\033[0m")
-                    print(f"Emulating sell for {mint}")
-                    profit = position_size * (current_price / buy_price - 1)
-                    # Вызываем только один раз с итоговым PNL
-                    update_balance(profit)
-                    price_diff = (current_price - start_price) / start_price
-                    record_trade(trade_history, min_price, max_price, delay1, delay2, price_diff)
-                    return
-
-                if current_price <= sl_price:
-                    print(f"\033[91mSL reached! Selling at {current_price}\033[0m")
-                    print(f"Emulating sell for {mint}")
-                    loss = position_size * (current_price / buy_price - 1)
-                    # Вызываем только один раз с итоговым PNL
-                    update_balance(loss)
-                    price_diff = (current_price - start_price) / start_price
-                    record_trade(trade_history, min_price, max_price, delay1, delay2, price_diff)
-                    return
-
-                if time.time() - start_time >= delay2:
-                    print(f"\033[93mTimeout reached! Selling at {current_price}\033[0m")
-                    print(f"Emulating sell for {mint}")
-                    profit_loss = position_size * (current_price / buy_price - 1)
-                    # Вызываем только один раз с итоговым PNL
-                    update_balance(profit_loss)
-                    price_diff = (current_price - start_price) / start_price
-                    record_trade(trade_history, min_price, max_price, delay1, delay2, price_diff)
-                    return
-
-    except Exception as e:
-        print(f"Error in trade for {public_key}: {e}")
-        await asyncio.sleep(5)
-        return
+    print(f"Starting trade cycle for user {user_id}, wallet {public_key[:8]}")
+    async for args in listen_for_create_transaction():
+        mint = args['mint']
+        bonding_curve = args['bondingCurve']
+        associated_bonding_curve = args['associatedBondingCurve']
+        print(f"New token detected: {mint}, bonding curve: {bonding_curve}")
+        await execute_trade(mint, bonding_curve, position_size, trade_history)

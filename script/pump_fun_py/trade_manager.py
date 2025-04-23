@@ -36,8 +36,8 @@ trade_history = load_backup()
 def format_wallet_info(public_key, wallet_data):
     pub_key_short = public_key[:8]
     priv_key_short = f"{wallet_data['private_key'][:4]}...{wallet_data['private_key'][-4:]}" if wallet_data['private_key'] else "N/A"
-    position_size = wallet_data['position_size']  # В процентах
-    trade_amount = wallet_data['balance'] * (position_size / 100)  # В SOL
+    position_size = wallet_data['position_size']
+    trade_amount = wallet_data['balance'] * (position_size / 100)
     slippage_tolerance = wallet_data['slippage_tolerance']
     
     position_str = f"{position_size:.2f}% ({trade_amount:.6f} SOL)"
@@ -77,10 +77,9 @@ async def get_user_wallets(pool):
         } for row in rows if row["public_key"] in wallet_store]
 
 async def update_trade_stats(pool, public_key, pnl, is_success):
-    logger.info(f"Attempting to update trade stats for {public_key[:8]}: PNL={pnl:.6f}, Success={is_success}")
+    logger.info(f"Updating trade stats for {public_key[:8]}: PNL={pnl:.6f}, Success={is_success}")
     try:
         async with pool.acquire() as conn:
-            logger.info(f"Acquired DB connection for {public_key[:8]}")
             await conn.execute("""
                 INSERT INTO trades_stats (public_key, trade_date, date, pnl, is_success)
                 VALUES ($1, NOW(), CURRENT_DATE, $2, $3)
@@ -88,46 +87,44 @@ async def update_trade_stats(pool, public_key, pnl, is_success):
                 SET pnl = trades_stats.pnl + $2,
                     is_success = $3
             """, public_key, pnl, is_success)
-            logger.info(f"Trade stats recorded for {public_key[:8]}: PNL={pnl:.6f}, Success={is_success}")
     except Exception as e:
         logger.error(f"Failed to update trade stats for {public_key[:8]}: {e}")
 
 async def get_balance(public_key):
     client = AsyncClient(RPC)
-    pubkey = Pubkey.from_string(public_key)
-    balance_resp = await client.get_balance(pubkey)
-    return balance_resp.value / 1e9
+    try:
+        pubkey = Pubkey.from_string(public_key)
+        balance_resp = await client.get_balance(pubkey)
+        return balance_resp.value / 1e9
+    finally:
+        await client.close()
 
-async def trade_wrapper(user_wallet, pool, websocket, trade_history):
+async def trade_wrapper(user_wallet, pool, trade_history):
     user_id = user_wallet["user_id"]
     public_key = user_wallet["public_key"]
     private_key = user_wallet["private_key"]
     position_size_percent = user_wallet["position_size"]
     slippage_tolerance = user_wallet["slippage_tolerance"]
 
-    # Определяем патчи один раз перед циклом
     def patched_update_balance(change):
-        update_balance(change)  # Логирование в консоль
+        update_balance(change)
         is_success = change > 0
         wallet_store[public_key]["balance"] += change
         wallet_store[public_key]["pnl"] += change
         wallet_store[public_key]["trade_count"] += 1
         wallet_store[public_key]["last_trade_time"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        logger.info(f"Scheduling update_trade_stats for {public_key[:8]} with PNL={change:.6f}")
         asyncio.create_task(update_trade_stats(pool, public_key, change, is_success))
         logger.info(f"Balance updated for {public_key[:8]}:\n{format_wallet_info(public_key, wallet_store[public_key])}")
 
     def patched_record_trade(data, min_price, max_price, buy_delay, sell_delay, result):
         record_trade(data, min_price, max_price, buy_delay, sell_delay, result)
-        # Не обновляем wallet_store и не вызываем update_trade_stats здесь, так как это уже сделано в patched_update_balance
-        logger.info(f"Trade recorded in history for {public_key[:8]}")
+        logger.info(f"Trade recorded for {public_key[:8]}")
 
-    # Применяем патчи к trade_service перед началом торговли
     import trade_service
     trade_service.update_balance = patched_update_balance
     trade_service.record_trade = patched_record_trade
 
-    while wallet_store[public_key]["is_trading_active"]:  # Цикл работает, пока торговля активна
+    while wallet_store[public_key]["is_trading_active"]:
         try:
             payer_keypair = Keypair.from_base58_string(private_key)
             balance = wallet_store[public_key]["balance"]
@@ -140,9 +137,7 @@ async def trade_wrapper(user_wallet, pool, websocket, trade_history):
             await trade(user_id, public_key, payer_keypair, trade_amount, slippage_tolerance, trade_history)
         except Exception as e:
             logger.error(f"Trade failed for user {user_id}, wallet {public_key[:8]}: {e}")
-            await asyncio.sleep(5)  # Задержка перед следующей попыткой
-
-    logger.info(f"Trade wrapper stopped for {public_key[:8]}")
+            await asyncio.sleep(5)
 
 async def update_balances(pool):
     while True:
@@ -169,6 +164,7 @@ async def sync_wallet_store(pool):
 async def handle_websocket(websocket, pool):
     try:
         async for message in websocket:
+            logger.info(f"Received WebSocket message: {message}")
             data = json.loads(message)
             action = data.get("action")
             public_key = data.get("publicKey")
@@ -184,7 +180,6 @@ async def handle_websocket(websocket, pool):
                             del trade_tasks[existing_pk]
 
                 async with pool.acquire() as conn:
-                    print("dbdbdbdbdbdb")
                     row = await conn.fetchrow("SELECT * FROM wallets WHERE public_key = $1", public_key)
                     position_size = float(data.get("positionSize", 25))
                     slippage_tolerance = float(data.get("slippageTolerance", 2))
@@ -227,7 +222,7 @@ async def handle_websocket(websocket, pool):
                 wallet = next((w for w in active_wallets if w["public_key"] == public_key), None)
                 if wallet and public_key not in trade_tasks:
                     wallet_store[public_key]["is_trading_active"] = True
-                    task = asyncio.create_task(trade_wrapper(wallet, pool, websocket, trade_history))
+                    task = asyncio.create_task(trade_wrapper(wallet, pool, trade_history))
                     trade_tasks[public_key] = task
                     logger.info(f"Bot started for {public_key[:8]}:\n{format_wallet_info(public_key, wallet_store[public_key])}")
 
