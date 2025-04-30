@@ -20,7 +20,7 @@ import struct
 import base64
 import json
 from construct import Struct, Int64ul, Flag
-
+ 
 
 EXPECTED_DISCRIMINATOR = struct.pack("<Q", 6966180631402821399)
 TOKEN_DECIMALS = 6

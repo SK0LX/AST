@@ -4,14 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AST - Login Page</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2332CD32' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Ccircle cx='12' cy='12' r='6'/%3E%3Ccircle cx='12' cy='12' r='2'/%3E%3Cpath d='M12 2v4'/%3E%3Cpath d='M12 18v4'/%3E%3Cpath d='M2 12h4'/%3E%3Cpath d='M18 12h4'/%3E%3C/svg%3E">
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
         body {
             font-family: 'Inter', sans-serif;
             transition: all 0.3s ease;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
         }
+        
+        /* Dark theme styles */
         body.dark {
             background-color: #0a0a0a;
             color: #e5e7eb;
@@ -36,6 +48,8 @@
             background-color: #0a0a0a;
             border: 1px solid #2d2d2d;
             color: #e5e7eb;
+            font-size: 1rem;
+            padding: 0.8rem;
         }
         body.dark .email-input::placeholder {
             color: #6b7280;
@@ -44,6 +58,8 @@
             background-color: #2d2d2d;
             color: #6b7280;
             cursor: not-allowed;
+            font-size: 1rem;
+            padding: 0.9rem;
         }
         body.dark .email-button.enabled {
             background-color: #ffffff;
@@ -75,10 +91,10 @@
             color: #e5e7eb;
         }
         body.dark .otp-input.success {
-            border: 2px solid #32CD32; /* Зелёная обводка при успехе */
+            border: 2px solid #32CD32;
         }
         body.dark .otp-input.error {
-            border: 2px solid #EF4444; /* Красная обводка при ошибке */
+            border: 2px solid #EF4444;
         }
         body.dark .otp-signin-button {
             background-color: #2d2d2d;
@@ -108,9 +124,17 @@
         }
         body.dark .error-message {
             color: #EF4444;
-            font-size: 0.875rem;
-            margin-top: 0.25rem;
         }
+        body.dark .terms-link {
+            color: #b8bfcc;
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            margin-bottom: 0.3rem;
+        }
+        
+        /* Light theme styles */
         body.light {
             background-color: #ffffff;
             color: #000000;
@@ -135,6 +159,8 @@
             background-color: #ffffff;
             border: 1px solid #e5e7eb;
             color: #000000;
+            font-size: 1rem;
+            padding: 0.8rem;
         }
         body.light .email-input::placeholder {
             color: #9ca3af;
@@ -143,6 +169,8 @@
             background-color: #f3f4f6;
             color: #9ca3af;
             cursor: not-allowed;
+            font-size: 1rem;
+            padding: 0.9rem;
         }
         body.light .email-button.enabled {
             background-color: #000000;
@@ -175,12 +203,12 @@
             color: #000000;
         }
         body.light .otp-input.success {
-            border: 2px solid #32CD32; /* Зелёная обводка при успехе */
+            border: 2px solid #32CD32;
         }
         body.light .otp-input.error {
-            border: 2px solid #EF4444; /* Красная обводка при ошибке */
+            border: 2px solid #EF4444;
         }
-        body.light .otp-signin-button {
+        body.light .otp-signinдання-button {
             background-color: #f3f4f6;
             color: #9ca3af;
             cursor: not-allowed;
@@ -209,9 +237,17 @@
         }
         body.light .error-message {
             color: #EF4444;
-            font-size: 0.875rem;
-            margin-top: 0.25rem;
         }
+        body.light .terms-link {
+            color: #6b7280;
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            margin-bottom: 0.3rem;
+        }
+        
+        /* Common styles */
         .top-bar {
             position: absolute;
             top: 1rem;
@@ -221,15 +257,215 @@
             justify-content: space-between;
             align-items: center;
         }
+        
         .header {
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
+        
         .theme-toggle {
             display: flex;
             align-items: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.3s ease;
         }
+        
+        body.dark .theme-toggle {
+            background-color: #2d2d2d;
+        }
+        
+        body.light .theme-toggle {
+            background-color: #f3f4f6;
+        }
+        
+        .theme-toggle:hover {
+            opacity: 0.8;
+        }
+    
+        body.dark .theme-toggle svg {
+            fill: #ffffff;
+        }
+        
+        .main-content {
+            max-width: 24rem;
+            width: 100%;
+            text-align: center;
+            transition: filter 0.3s ease;
+        }
+        
+        .main-content.blurred {
+            filter: blur(4px);
+        }
+        
+        h2 {
+            font-size: 1.875rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+        
+        .description {
+            font-size: 0.875rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .social-buttons {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .social-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.8rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.3s ease;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .github-icon {
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+        }
+        
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+        }
+        
+        .form-group {
+            margin-bottom: 0.75rem;
+            text-align: left;
+        }
+        
+        .label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+        }
+        
+        .email-input {
+            width: 100%;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            outline: none;
+            border: 1px solid;
+        }
+        
+        .email-input:focus {
+            box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.5);
+        }
+        
+        .email-button {
+            width: 100%;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            margin-top: 0.5rem;
+        }
+        
+        .error-message {
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        .custom-checkbox {
+            appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #000000;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        body.dark .custom-checkbox {
+            border: 2px solid #e5e7eb;
+        }
+        
+        .custom-checkbox:checked {
+            background-color: #000000;
+            border-color: #000000;
+            position: relative;
+        }
+        
+        body.dark .custom-checkbox:checked {
+            background-color: #ffffff;
+            border-color: #ffffff;
+        }
+        
+        .custom-checkbox:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0.5rem;
+            height: 0.75rem;
+            border: solid #ffffff;
+            border-width: 0 2px 2px 0;
+            transform: translate(-50%, -60%) rotate(45deg);
+        }
+        
+        body.light .custom-checkbox:checked::after {
+            border-color: #ffffff;
+        }
+        
+        body.dark .custom-checkbox:checked::after {
+            border-color: #000000;
+        }
+        
+        /* OTP Modal styles */
+        .otp-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .otp-overlay.visible {
+            opacity: 1;
+        }
+        
+        .otp-overlay.hidden {
+            display: none;
+        }
+        
         .otp-modal {
             position: fixed;
             top: 50%;
@@ -243,33 +479,20 @@
             opacity: 0;
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
+        
         #terms-modal {
             width: 32rem;
         }
+        
         .otp-modal.visible {
             opacity: 1;
             transform: translate(-50%, -50%) scale(1);
         }
-        .otp-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 40;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+        
+        .otp-modal.hidden {
+            display: none;
         }
-        .otp-overlay.visible {
-            opacity: 1;
-        }
-        .main-content {
-            transition: filter 0.3s ease;
-        }
-        .main-content.blurred {
-            filter: blur(4px);
-        }
+        
         .otp-header {
             position: relative;
             display: flex;
@@ -277,89 +500,92 @@
             align-items: center;
             margin-bottom: 1rem;
         }
+        
         .otp-back {
             position: absolute;
             left: 0;
+            background: none;
+            border: none;
+            cursor: pointer;
         }
+        
+        .otp-input-group {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
         .otp-input {
-            width: 3rem;
-            height: 3rem;
+            width: 3rem; /* Reduced from 3.5rem */
+            height: 3rem; /* Reduced from 3.5rem for consistency */
             text-align: center;
-            font-size: 1.25rem;
+            font-size: 1.125rem; /* Reduced from 1.25rem for better fit */
             border-radius: 0.5rem;
             font-weight: 500;
+            transition: all 0.3s ease;
+            outline: none;
         }
+
         .otp-signin-button {
             position: relative;
             width: 100%;
-            padding: 0.75rem;
+            padding: 1rem;
             border-radius: 0.5rem;
             font-weight: 500;
             text-transform: uppercase;
             display: flex;
             justify-content: center;
             align-items: center;
-            transition-colors: all 0.3s ease;
+            transition: all 0.3s ease;
+            border: none;
+            margin-top: 1rem;
         }
+        
         .otp-signin-button svg {
             position: absolute;
             right: 1rem;
         }
+        
         .otp-resend {
             font-size: 0.875rem;
             text-decoration: none;
+            cursor: pointer;
         }
+        
         .otp-email {
             font-weight: 600;
         }
-        .social-buttons {
-            display: flex;
-            gap: 1rem;
+        
+        .otp-message {
+            text-align: center;
+            margin-bottom: 1rem;
+            display: none;
         }
-        .custom-checkbox {
-            appearance: none;
+        
+        .icon {
             width: 1.25rem;
             height: 1.25rem;
-            border: 2px solid #000000;
-            border-radius: 0.25rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
         }
-        body.dark .custom-checkbox {
-            border: 2px solid #e5e7eb;
+        
+        .logo-icon {
+            width: 2rem;
+            height: 2rem;
         }
-        .custom-checkbox:checked {
-            background-color: #000000;
-            border-color: #000000;
-            position: relative;
-        }
-        body.dark .custom-checkbox:checked {
-            background-color: #ffffff;
-            border-color: #ffffff;
-        }
-        .custom-checkbox:checked::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0.5rem;
-            height: 0.75rem;
-            border: solid #ffffff;
-            border-width: 0 2px 2px 0;
-            transform: translate(-50%, -60%) rotate(45deg);
-        }
-        body.light .custom-checkbox:checked::after {
-            border-color: #ffffff;
-        }
-        body.dark .custom-checkbox:checked::after {
-            border-color: #000000;
+        
+        .terms-content {
+            max-height: 18rem;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            line-height: 1.5;
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center">
+<body class="dark">
     <div class="top-bar">
         <div class="header">
-            <svg class="h-8 w-8 logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="logo-icon logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/>
                 <circle cx="12" cy="12" r="6"/>
                 <circle cx="12" cy="12" r="2"/>
@@ -368,61 +594,64 @@
                 <path d="M2 12h4"/>
                 <path d="M18 12h4"/>
             </svg>
-            <span class="text-xl font-semibold">AST</span>
+            <span style="font-size: 1.25rem; font-weight: 600;">AST</span>
         </div>
         <button class="theme-toggle" onclick="toggleTheme()">
-            <svg id="theme-icon" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+            <svg id="theme-icon" class="icon" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M21.4 13.7C20.6 13.9 19.8 14 19 14c-5 0-9-4-9-9 0-.8.1-1.6.3-2.4-4.2 1.1-7.3 4.9-7.3 9.4 0 5.5 4.5 10 10 10 4.5 0 8.3-3 9.4-7.3z"/>
             </svg>
         </button>
     </div>
-    <div class="main-content max-w-sm w-full space-y-6 text-center">
-        <h2 class="text-3xl font-semibold">Log in</h2>
+    
+    <div class="main-content">
+        <h2>Log in</h2>
 
-        <p class="text-sm description">
+        <p class="description">
             Enter your email below to log in to your account, or continue with a social provider.
         </p>
 
         <div class="social-buttons">
-            <button class="flex items-center justify-center gap-2 px-4 py-2 social-button rounded-md transition-colors">
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+            <button class="social-button">
+                <svg class="github-icon" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.083-.729.083-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
                 </svg>
                 Github
             </button>
-            <button class="flex items-center justify-center gap-2 px-4 py-2 social-button rounded-md transition-colors">
-                <span class="text-lg">G</span>
+            <button class="social-button">
+                <span style="font-size: 1rem;">G</span>
                 Google
             </button>
         </div>
 
-        <div class="divider flex items-center gap-2 text-xs uppercase">
+        <div class="divider">
             <span>Or continue with</span>
         </div>
 
-        <div class="space-y-3">
-            <label class="label block text-left text-sm font-medium">Email</label>
+        <div class="form-group">
+            <label class="label">Email</label>
             <input
                 type="email"
                 placeholder="m@example.com"
-                class="w-full px-3 py-2 email-input rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                class="email-input"
                 required
                 id="email-input"
             >
-            <p id="email-error" class="error-message hidden"></p>
-            <button
-                class="w-full px-4 py-2 email-button rounded-md transition-colors"
-                id="login-button"
-                disabled
-                onclick="requestOtp()"
-            >
-                Log in with Email
-            </button>
-            <div class="flex items-center justify-center gap-2">
-                <input type="checkbox" id="terms-checkbox" class="custom-checkbox">
-                <label for="terms-checkbox" class="text-sm label">I agree to the</label>
-                <button onclick="showTermsModal()" class="text-sm underline label hover:text-gray-500">Terms of Service</button>
-            </div>
+            <p id="email-error" class="error-message"></p>
+        </div>
+        
+        <button
+            class="email-button"
+            id="login-button"
+            disabled
+            onclick="requestOtp()"
+        >
+            Log in with Email
+        </button>
+        
+        <div class="checkbox-group">
+            <input type="checkbox" id="terms-checkbox" class="custom-checkbox">
+            <label for="terms-checkbox" class="label">I agree to the</label>
+            <button onclick="showTermsModal()" class="terms-link">Terms of Service</button>
         </div>
     </div>
 
@@ -430,16 +659,16 @@
     <div id="otp-modal" class="otp-modal hidden">
         <div class="otp-header">
             <button class="otp-back" onclick="hideOtpModal()">
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M15 18l-6-6 6-6"/>
                 </svg>
             </button>
-            <h3 class="text-lg font-semibold">Sign in</h3>
+            <h3 style="font-size: 1.125rem; font-weight: 600;">Sign in</h3>
         </div>
-        <p class="text-sm description mb-4">
+        <p class="description">
             Enter the code we just sent to <span id="otp-email" class="otp-email"></span>
         </p>
-        <div class="flex justify-center gap-3 mb-4">
+        <div class="otp-input-group">
             <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 1)">
             <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 2)">
             <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 3)">
@@ -447,13 +676,13 @@
             <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 5)">
             <input type="text" maxlength="1" class="otp-input" oninput="moveToNext(this, 6)">
         </div>
-        <p id="otp-message" class="text-center mb-4 hidden"></p>
-        <div class="flex justify-center mb-4">
+        <p id="otp-message" class="otp-message hidden"></p>
+        <div style="display: flex; justify-content: center; margin-bottom: 1rem;">
             <a href="#" class="otp-resend" id="resend-link" onclick="resendCode()">Resend (<span id="resend-timer">2:00</span>)</a>
         </div>
         <button class="otp-signin-button" id="otp-signin-button" disabled onclick="verifyOtp()">
             <span>Sign in</span>
-            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M5 12h14m-4-4l4 4-4 4"/>
             </svg>
         </button>
@@ -463,13 +692,13 @@
     <div id="terms-modal" class="otp-modal hidden">
         <div class="otp-header">
             <button class="otp-back" onclick="hideTermsModal()">
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M15 18l-6-6 6-6"/>
                 </svg>
             </button>
-            <h3 class="text-xl font-semibold">Disclaimer: Terms of Service</h3>
+            <h3 style="font-size: 1.25rem; font-weight: 600;">Disclaimer: Terms of Service</h3>
         </div>
-        <div class="text-base description mb-4 max-h-72 overflow-y-auto">
+        <div class="terms-content">
             <p>This software is open source and provided "as is". No guarantees of profit or functionality are given. You are solely responsible for all risks, taxes, and legal compliance. I do not manage your funds; I only provide a tool for swaps on Pump.fun via a trusted contract. AML risks are your responsibility. The key is stored in RAM and not saved. Profit share in SOL (if applicable) is a fee for the software, transferred manually by you. By using it, you accept all terms.</p>
         </div>
         <button class="otp-signin-button enabled" onclick="hideTermsModal()">
@@ -565,32 +794,39 @@
 
         async function requestOtp() {
             const email = emailInput.value;
-            if (validateEmail(email) && termsCheckbox.checked) {
-                try {
-                    const response = await fetch('/auth', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ email }),
-                    });
-                    const data = await response.json();
-                    if (response.ok) {
-                        otpEmail.textContent = email;
-                        otpOverlay.classList.remove('hidden');
-                        otpOverlay.classList.add('visible');
-                        otpModal.classList.remove('hidden');
-                        otpModal.classList.add('visible');
-                        mainContent.classList.add('blurred');
-                        startResendTimer();
-                        otpInputs[0].focus();
-                    } else {
-                        showMessage(emailError, data.error || 'Failed to send OTP');
-                    }
-                } catch (error) {
-                    console.error('Error sending OTP:', error);
-                    showMessage(emailError, 'Error sending OTP. Please try again.');
+            if (!validateEmail(email)) {
+                showMessage(emailError, 'Please enter a valid email address');
+                return;
+            }
+            if (!termsCheckbox.checked) {
+                showMessage(emailError, 'Please agree to the Terms of Service');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/auth', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email }),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    otpEmail.textContent = email;
+                    otpOverlay.classList.remove('hidden');
+                    otpOverlay.classList.add('visible');
+                    otpModal.classList.remove('hidden');
+                    otpModal.classList.add('visible');
+                    mainContent.classList.add('blurred');
+                    startResendTimer();
+                    otpInputs[0].focus();
+                } else {
+                    showMessage(emailError, data.error || 'Failed to send OTP');
                 }
+            } catch (error) {
+                console.error('Error sending OTP:', error);
+                showMessage(emailError, 'Error sending OTP. Please try again.');
             }
         }
 
@@ -736,7 +972,6 @@
                 }
             }
         });
-        
     </script>
 </body>
 </html>
