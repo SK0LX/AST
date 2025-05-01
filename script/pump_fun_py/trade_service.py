@@ -15,6 +15,10 @@ from construct import Struct, Int64ul, Flag
 from config import *
 from coin_data import get_coin_data, sol_for_tokens, tokens_for_sol
 
+from strategy_optimizer import StrategyOptimizer
+optimizer = StrategyOptimizer()       
+
+
 EXPECTED_DISCRIMINATOR = struct.pack("<Q", 6966180631402821399)
 TOKEN_DECIMALS = 6
 WEBSOCKET_TIMEOUT = 60
@@ -202,6 +206,12 @@ async def listen_for_create_transaction():
             await asyncio.sleep(RECONNECT_DELAY)
 
 async def execute_trade(mint, bonding_curve, position_size, trade_history):
+    suggestion = optimizer.suggest(buy_price)
+    if suggestion:
+        delay1 = suggestion["buy_delay"]
+        delay2 = suggestion["sell_delay"]
+    else:
+        delay1, delay2 = generate_times()
     delay1, delay2 = generate_times()
     await asyncio.sleep(delay1)
 
