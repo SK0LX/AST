@@ -131,7 +131,7 @@
             border: none;
             padding: 0;
             cursor: pointer;
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.1rem;
         }
         
         /* Light theme styles */
@@ -208,7 +208,7 @@
         body.light .otp-input.error {
             border: 2px solid #EF4444;
         }
-        body.light .otp-signinдання-button {
+        body.light .otp-signin-button {
             background-color: #f3f4f6;
             color: #9ca3af;
             cursor: not-allowed;
@@ -244,7 +244,7 @@
             border: none;
             padding: 0;
             cursor: pointer;
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.1rem;
         }
         
         /* Common styles */
@@ -264,31 +264,41 @@
             gap: 0.5rem;
         }
         
-        .theme-toggle {
+        .top-bar-right {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .theme-toggle, .language-toggle {
             display: flex;
             align-items: center;
             background: none;
             border: none;
             cursor: pointer;
-            padding: 0.5rem;
-            border-radius: 50%;
+            padding: 0.6rem;
+            border-radius: 0.25rem;
             transition: all 0.3s ease;
         }
         
-        body.dark .theme-toggle {
+        body.dark .theme-toggle, body.dark .language-toggle {
             background-color: #2d2d2d;
         }
         
-        body.light .theme-toggle {
+        body.light .theme-toggle, body.light .language-toggle {
             background-color: #f3f4f6;
         }
         
-        .theme-toggle:hover {
+        .theme-toggle:hover, .language-toggle:hover {
             opacity: 0.8;
         }
-    
-        body.dark .theme-toggle svg {
+        
+        body.dark .theme-toggle svg, body.dark .language-toggle span {
             fill: #ffffff;
+            color: #ffffff;
+        }
+        
+        body.light .language-toggle span {
+            color: #000000;
         }
         
         .main-content {
@@ -361,7 +371,7 @@
             display: block;
             font-size: 0.875rem;
             font-weight: 500;
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.1rem;
         }
         
         .email-input {
@@ -482,6 +492,7 @@
         
         #terms-modal {
             width: 32rem;
+            max-width: 95%;
         }
         
         .otp-modal.visible {
@@ -517,10 +528,10 @@
         }
 
         .otp-input {
-            width: 3rem; /* Reduced from 3.5rem */
-            height: 3rem; /* Reduced from 3.5rem for consistency */
+            width: 3rem;
+            height: 3rem;
             text-align: center;
-            font-size: 1.125rem; /* Reduced from 1.25rem for better fit */
+            font-size: 1.125rem;
             border-radius: 0.5rem;
             font-weight: 500;
             transition: all 0.3s ease;
@@ -596,17 +607,22 @@
             </svg>
             <span style="font-size: 1.25rem; font-weight: 600;">AST</span>
         </div>
-        <button class="theme-toggle" onclick="toggleTheme()">
-            <svg id="theme-icon" class="icon" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M21.4 13.7C20.6 13.9 19.8 14 19 14c-5 0-9-4-9-9 0-.8.1-1.6.3-2.4-4.2 1.1-7.3 4.9-7.3 9.4 0 5.5 4.5 10 10 10 4.5 0 8.3-3 9.4-7.3z"/>
-            </svg>
-        </button>
+        <div class="top-bar-right">
+            <button class="language-toggle" onclick="switchLanguage()">
+                <span id="language-text">EN</span>
+            </button>
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <svg id="theme-icon" class="icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M21.4 13.7C20.6 13.9 19.8 14 19 14c-5 0-9-4-9-9 0-.8.1-1.6.3-2.4-4.2 1.1-7.3 4.9-7.3 9.4 0 5.5 4.5 10 10 10 4.5 0 8.3-3 9.4-7.3z"/>
+                </svg>
+            </button>
+        </div>
     </div>
     
     <div class="main-content">
-        <h2>Log in</h2>
+        <h2 data-i18n="login">Log in</h2>
 
-        <p class="description">
+        <p class="description" data-i18n="description">
             Enter your email below to log in to your account, or continue with a social provider.
         </p>
 
@@ -624,11 +640,11 @@
         </div>
 
         <div class="divider">
-            <span>Or continue with</span>
+            <span data-i18n="or_continue_with">Or continue with</span>
         </div>
 
         <div class="form-group">
-            <label class="label">Email</label>
+            <label class="label" data-i18n="email">Email</label>
             <input
                 type="email"
                 placeholder="m@example.com"
@@ -644,14 +660,15 @@
             id="login-button"
             disabled
             onclick="requestOtp()"
+            data-i18n="login_with_email"
         >
             Log in with Email
         </button>
         
         <div class="checkbox-group">
             <input type="checkbox" id="terms-checkbox" class="custom-checkbox">
-            <label for="terms-checkbox" class="label">I agree to the</label>
-            <button onclick="showTermsModal()" class="terms-link">Terms of Service</button>
+            <label for="terms-checkbox" class="label" data-i18n="agree_to">I agree to the</label>
+            <button onclick="showTermsModal()" class="terms-link" data-i18n="terms_of_service">Terms of Service</button>
         </div>
     </div>
 
@@ -663,9 +680,9 @@
                     <path d="M15 18l-6-6 6-6"/>
                 </svg>
             </button>
-            <h3 style="font-size: 1.125rem; font-weight: 600;">Sign in</h3>
+            <h3 style="font-size: 1.125rem; font-weight: 600;" data-i18n="sign_in">Sign in</h3>
         </div>
-        <p class="description">
+        <p class="description" data-i18n="otp_description">
             Enter the code we just sent to <span id="otp-email" class="otp-email"></span>
         </p>
         <div class="otp-input-group">
@@ -678,10 +695,10 @@
         </div>
         <p id="otp-message" class="otp-message hidden"></p>
         <div style="display: flex; justify-content: center; margin-bottom: 1rem;">
-            <a href="#" class="otp-resend" id="resend-link" onclick="resendCode()">Resend (<span id="resend-timer">2:00</span>)</a>
+            <a href="#" class="otp-resend" id="resend-link" onclick="resendCode()">Отправить снова (<span id="resend-timer">2:00</span>)</a>
         </div>
         <button class="otp-signin-button" id="otp-signin-button" disabled onclick="verifyOtp()">
-            <span>Sign in</span>
+            <span data-i18n="sign_in">Sign in</span>
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M5 12h14m-4-4l4 4-4 4"/>
             </svg>
@@ -696,13 +713,13 @@
                     <path d="M15 18l-6-6 6-6"/>
                 </svg>
             </button>
-            <h3 style="font-size: 1.25rem; font-weight: 600;">Disclaimer: Terms of Service</h3>
+            <h3 style="font-size: 1.25rem; font-weight: 600;" data-i18n="terms_title">Disclaimer: Terms of Service</h3>
         </div>
-        <div class="terms-content">
+        <div class="terms-content" data-i18n="terms_content">
             <p>This software is open source and provided "as is". No guarantees of profit or functionality are given. You are solely responsible for all risks, taxes, and legal compliance. I do not manage your funds; I only provide a tool for swaps on Pump.fun via a trusted contract. AML risks are your responsibility. The key is stored in RAM and not saved. Profit share in SOL (if applicable) is a fee for the software, transferred manually by you. By using it, you accept all terms.</p>
         </div>
         <button class="otp-signin-button enabled" onclick="hideTermsModal()">
-            <span>Close</span>
+            <span data-i18n="close">Close</span>
         </button>
     </div>
 
@@ -723,8 +740,45 @@
         const termsModal = document.getElementById('terms-modal');
         const emailError = document.getElementById('email-error');
         const otpMessage = document.getElementById('otp-message');
+        const languageText = document.getElementById('language-text');
         let timerSeconds = 120;
         let timerInterval;
+
+        // Language translations
+        const translations = {
+            en: {
+                login: "Log in",
+                description: "Enter your email below to log in to your account, or continue with a social provider.",
+                or_continue_with: "Or continue with",
+                email: "Email",
+                login_with_email: "Log in with Email",
+                agree_to: "I agree to the",
+                terms_of_service: "Terms of Service",
+                sign_in: "Sign in",
+                otp_description: "Enter the code we just sent to ",
+                resend: "Resend",
+                terms_title: "Terms of Service",
+                terms_content: "This software is open source and provided \"as is\". No guarantees of profit or functionality are given. You are solely responsible for all risks, taxes, and legal compliance. I do not manage your funds; I only provide a tool for swaps on Pump.fun via a trusted contract. AML risks are your responsibility. The key is stored in RAM and not saved. Profit share in SOL (if applicable) is a fee for the software, transferred manually by you. By using it, you accept all terms.",
+                close: "Close"
+            },
+            ru: {
+                login: "Войти",
+                description: "Введите ваш email ниже, чтобы войти в аккаунт, или продолжите через социальные сети.",
+                or_continue_with: "Или продолжить с",
+                email: "Email",
+                login_with_email: "Войти через Email",
+                agree_to: "Я согласен с",
+                terms_of_service: "Условиями использования",
+                sign_in: "Войти",
+                otp_description: "Введите код, который мы отправили на ",
+                resend: "Отправить снова",
+                terms_title: "Дисклеймер",
+                terms_content: "Это программное обеспечение с открытым исходным кодом предоставляется \"как есть\". Никаких гарантий прибыли или функциональности не предоставляется. Вы несете полную ответственность за все риски, налоги и соблюдение законодательства. Я не управляю вашими средствами; я предоставляю только инструмент для обмена на Pump.fun через доверенный контракт. Риски AML — ваша ответственность. Ключ хранится в оперативной памяти и не сохраняется. Доля прибыли в SOL (если применимо) — это плата за программное обеспечение, переведенная вами вручную. Используя его, вы принимаете все условия.",
+                close: "Закрыть"
+            }
+        };
+
+        let currentLanguage = 'en';
 
         function setTheme(theme) {
             const body = document.body;
@@ -759,9 +813,41 @@
             localStorage.setItem('theme', newTheme);
         }
 
+        function switchLanguage() {
+            currentLanguage = currentLanguage === 'en' ? 'ru' : 'en';
+            languageText.textContent = currentLanguage === 'en' ? 'EN' : 'RU';
+            document.documentElement.lang = currentLanguage;
+            updateContent();
+            localStorage.setItem('language', currentLanguage);
+        }
+
+        function updateContent() {
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (element.tagName === 'INPUT' && element.hasAttribute('placeholder')) {
+                    element.placeholder = translations[currentLanguage][key] || translations.en[key];
+                } else {
+                    element.textContent = translations[currentLanguage][key] || translations.en[key];
+                }
+                // Handle special case for otp_description
+                if (key === 'otp_description') {
+                    element.innerHTML = `${translations[currentLanguage][key]} <span id="otp-email" class="otp-email"></span>`;
+                }
+                // Handle special case for resend link
+                if (key === 'resend') {
+                    element.innerHTML = `${translations[currentLanguage][key]} (<span id="resend-timer">1:00</span>)`;
+                }
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('theme') || 'dark';
             setTheme(savedTheme);
+            const savedLanguage = localStorage.getItem('language') || 'en';
+            currentLanguage = savedLanguage;
+            languageText.textContent = currentLanguage === 'en' ? 'EN' : 'RU';
+            document.documentElement.lang = currentLanguage;
+            updateContent();
         });
 
         function validateEmail(email) {
@@ -795,11 +881,11 @@
         async function requestOtp() {
             const email = emailInput.value;
             if (!validateEmail(email)) {
-                showMessage(emailError, 'Please enter a valid email address');
+                showMessage(emailError, translations[currentLanguage].invalid_email || 'Please enter a valid email address');
                 return;
             }
             if (!termsCheckbox.checked) {
-                showMessage(emailError, 'Please agree to the Terms of Service');
+                showMessage(emailError, translations[currentLanguage].agree_terms || 'Please agree to the Terms of Service');
                 return;
             }
             
@@ -844,7 +930,7 @@
             otpSigninButton.classList.remove('enabled');
             clearInterval(timerInterval);
             timerSeconds = 120;
-            resendTimer.textContent = '2:00';
+            resendTimer.innerHTML = '2:00';
             resendLink.classList.remove('active');
             otpMessage.classList.add('hidden');
         }
@@ -885,11 +971,17 @@
         }
 
         function startResendTimer() {
+            // Очищаем предыдущий интервал, если он существует
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
             timerInterval = setInterval(() => {
+                
                 timerSeconds--;
                 const minutes = Math.floor(timerSeconds / 60);
                 const seconds = timerSeconds % 60;
-                resendTimer.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                resendTimer.innerHTML = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
                 if (timerSeconds <= 0) {
                     clearInterval(timerInterval);
                     resendLink.classList.add('active');
@@ -898,7 +990,7 @@
         }
 
         async function resendCode() {
-            if (timerSeconds <= 0) {
+            if (timerSeconds <= 0 || !timerInterval) {
                 const email = emailInput.value;
                 try {
                     const response = await fetch('/auth', {
@@ -911,7 +1003,7 @@
                     const data = await response.json();
                     if (response.ok) {
                         timerSeconds = 120;
-                        resendTimer.textContent = '2:00';
+                        resendTimer.innerHTML = '2:00';
                         resendLink.classList.remove('active');
                         startResendTimer();
                         otpInputs.forEach(input => {
@@ -920,13 +1012,13 @@
                         });
                         otpSigninButton.disabled = true;
                         otpSigninButton.classList.remove('enabled');
-                        showMessage(otpMessage, 'Code resent!');
+                        showMessage(otpMessage, translations[currentLanguage].code_resent || 'Code resent!');
                     } else {
                         showMessage(otpMessage, data.error || 'Failed to resend OTP');
                     }
                 } catch (error) {
                     console.error('Error resending OTP:', error);
-                    showMessage(otpMessage, 'Error resending OTP. Please try again.');
+                    showMessage(otpMessage, translations[currentLanguage].error_resending || 'Error resending OTP. Please try again.');
                 }
             }
         }
@@ -953,12 +1045,12 @@
                         }, 1000);
                     } else {
                         otpInputs.forEach(input => input.classList.add('error'));
-                        showMessage(otpMessage, data.error || 'Invalid OTP');
+                        showMessage(otpMessage, data.error || translations[currentLanguage].invalid_otp || 'Invalid OTP');
                     }
                 } catch (error) {
                     console.error('Error verifying OTP:', error);
                     otpInputs.forEach(input => input.classList.add('error'));
-                    showMessage(otpMessage, 'Error verifying OTP. Please try again.');
+                    showMessage(otpMessage, translations[currentLanguage].error_verifying || 'Error verifying OTP. Please try again.');
                 }
             }
         }
