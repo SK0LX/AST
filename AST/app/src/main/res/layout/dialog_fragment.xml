@@ -25,6 +25,7 @@
             android:padding="24dp">
 
             <TextView
+                android:textColor="@color/black"
                 android:id="@+id/tvWalletSettingsTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -50,6 +51,7 @@
                 android:layout_height="wrap_content"
                 android:paddingBottom="4dp"
                 android:text="Private Key"
+                android:textColor="@color/black"
                 android:textSize="14sp" />
 
             <EditText
@@ -77,6 +79,7 @@
                 android:layout_height="wrap_content"
                 android:paddingTop="8dp"
                 android:paddingBottom="4dp"
+                android:textColor="@color/black"
                 android:text="Primary Wallet Address"
                 android:textSize="14sp" />
 
@@ -94,6 +97,7 @@
                 android:layout_height="wrap_content"
                 android:paddingTop="8dp"
                 android:paddingBottom="4dp"
+                android:textColor="@color/black"
                 android:text="Position Size (%)"
                 android:textSize="14sp" />
 
@@ -109,6 +113,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingTop="8dp"
+                android:textColor="@color/black"
                 android:paddingBottom="4dp"
                 android:text="Slippage Tolerance (%)"
                 android:textSize="14sp" />
@@ -125,6 +130,7 @@
                 android:id="@+id/btnSaveChanges"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:textColor="@color/black"
                 android:layout_marginTop="16dp"
                 android:background="@drawable/button_background"
                 android:text="SAVE CHANGES" />

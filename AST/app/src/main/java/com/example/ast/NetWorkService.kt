@@ -4,6 +4,8 @@ import com.example.ast.AuthRequest
 import com.example.ast.AuthResponse
 import com.example.ast.CheckAuthResponse
 import com.example.ast.DashboardResponse
+import com.example.ast.LogOutRequest
+import com.example.ast.RegisterPhoneRequest
 import com.example.ast.ToggleRequest
 import com.example.ast.VerifyRequest
 import com.example.ast.VerifyResponse
@@ -18,7 +20,6 @@ import retrofit2.Response
 class NetworkService {
     private val api = RetrofitClient.instance
 
-    // Авторизация по email
     suspend fun auth(
         email: String,
         callback: (AuthResponse?, String) -> Unit
@@ -112,6 +113,41 @@ class NetworkService {
             callback(response, "куку")
         } catch (e: Exception) {
             callback(null, "Ошибка верификации: ${e.message}")
+        }
+    }
+
+    suspend fun registerPhone(
+        email: String?,
+        deviceToken: String?,
+        callback: (Boolean, String) -> Unit
+    ){
+        try {
+            val response = api.registerPhone(RegisterPhoneRequest(email, deviceToken))
+            if (response.success != null){
+                if (response.success){
+                    callback(response.success, "-")
+                }
+                else{
+                    callback(false, response.error!!)
+                }
+            }
+        } catch (e: Exception){
+
+        }
+    }
+
+    suspend fun logOutPhone(
+        email: String?,
+        callback: (Boolean, String) -> Unit
+    ){
+        val response = api.logOutPhone(LogOutRequest(email))
+        if (response.success != null){
+            if (response.success){
+                callback(response.success, "-")
+            }
+            else{
+                callback(false, response.error!!)
+            }
         }
     }
 }

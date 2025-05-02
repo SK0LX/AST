@@ -91,4 +91,27 @@ class AuthViewModel : ViewModel() {
             }
         }
     }
+
+    fun registerPhone(
+        email: String,
+        deviceToken: String,
+        callback: (Boolean, String?) -> Unit
+    ){
+        viewModelScope.launch {
+            networkService.registerPhone(email, deviceToken) { success, errorMessage ->
+                callback(success, errorMessage)
+            }
+        }
+    }
+
+    fun logOutPhone(
+        email: String,
+        callback: (Boolean, String?) -> Unit
+    ){
+        viewModelScope.launch {
+            networkService.logOutPhone(email) { success, errorMessage ->
+                callback(success, errorMessage)
+            }
+        }
+    }
 }

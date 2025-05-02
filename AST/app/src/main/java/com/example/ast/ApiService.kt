@@ -34,8 +34,43 @@ interface ApiService {
         @Query("userId") userId: String
     ): DashboardResponse
 
+
+
+    @POST("/phone/register")
+    suspend fun registerPhone(@Body request: RegisterPhoneRequest): RegisterPhoneResponse
+
+    @POST("/phone/logout")
+    suspend fun logOutPhone(@Body request: LogOutRequest): LogOutResponse
 }
 
+data class RegisterPhoneRequest(
+    @SerializedName("email")
+    val email: String?,
+
+    @SerializedName("deviceToken")
+    val deviceToken: String? = null
+)
+
+data class RegisterPhoneResponse(
+    @SerializedName("success")
+    val success: Boolean?,
+
+    @SerializedName("error")
+    val error: String? = null
+)
+
+data class LogOutRequest(
+    @SerializedName("email")
+    val email: String?,
+)
+
+data class LogOutResponse(
+    @SerializedName("success")
+    val success: Boolean?,
+
+    @SerializedName("error")
+    val error: String? = null
+)
 
 // Auth.kt
 data class AuthRequest(val email: String)

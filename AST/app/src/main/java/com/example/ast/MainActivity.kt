@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.util.Log
 import android.util.Patterns
 import android.view.View
-import android.view.animation.AnimationUtils
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -30,10 +29,10 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 import androidx.lifecycle.lifecycleScope
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private val viewModel: AuthViewModel by viewModels()
@@ -50,15 +49,27 @@ class MainActivity : AppCompatActivity() {
         const val PREF_CURRENT_SCREEN = "current_screen"
         private var PREF_USER_ID = "USER_ID"
         private var PREF_SESSION_TIME = "SESSION_TIME"
+        private const val PREF_FCM_TOKEN    = "FCM_TOKEN"
+        private var EMAIL = "Email"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val prefs = getSharedPreferences("AppSettings", MODE_PRIVATE)
-        isDarkTheme = prefs.getBoolean("DarkTheme", false)
-        setAppTheme()
-
         notificationManager = AppNotificationManager(this)
         super.onCreate(savedInstanceState)
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w("FCM", "Fetching FCM registration token failed", task.exception)
+                return@addOnCompleteListener
+            }
+            val token = task.result
+            Log.d("FCM", "FCM Token: $token")
+            val prefs = getSharedPreferences("AppSettings", MODE_PRIVATE)
+            prefs.edit()
+                .putString(PREF_FCM_TOKEN, token)
+                .apply()
+        }
         setContentView(R.layout.activity_main)
         val savedScreen = prefs.getInt(PREF_CURRENT_SCREEN, SCREEN_LOGIN)
         viewFlipper = findViewById(R.id.flipper)
@@ -75,20 +86,27 @@ class MainActivity : AppCompatActivity() {
             loadDashboardData(prefs.getString(PREF_USER_ID, null).toString())
         }
 
+        viewFlipper.getChildAt(SCREEN_MAIN).findViewById<Button>(R.id.btnBack).setOnClickListener {
+            CoroutineScope(Dispatchers.Main).launch {
+                var email = getSharedPreferences("AppSettings", MODE_PRIVATE)
+                    .getString(EMAIL, null)
+                viewModel.logOutPhone(email!!){ success, errorMessage ->
+                    if (success){
+                        viewFlipper.displayedChild = SCREEN_LOGIN
+                        Toast.makeText(this@MainActivity, "Вы вышли из аккаунта", Toast.LENGTH_SHORT).show()
+                    } else{
+                        Toast.makeText(this@MainActivity, errorMessage, Toast.LENGTH_SHORT).show()
+                    }
 
-        findViewById<Button>(R.id.btnBack).setOnClickListener {
-            viewFlipper.displayedChild = SCREEN_LOGIN
+                }
+            }
         }
 
-        findViewById<Button>(R.id.back).setOnClickListener{
-            viewFlipper.displayedChild = SCREEN_LOGIN
-        }
-
-        findViewById<Button>(R.id.btnEditSettings).setOnClickListener{
+        viewFlipper.getChildAt(SCREEN_MAIN).findViewById<Button>(R.id.btnEditSettings).setOnClickListener{
             showWalletDialog()
         }
 
-        findViewById<Switch>(R.id.switch1).setOnCheckedChangeListener { btn, isCheked ->
+        viewFlipper.getChildAt(SCREEN_MAIN).findViewById<Switch>(R.id.switch1).setOnCheckedChangeListener { btn, isCheked ->
             activateBot(btn, isCheked)
         }
 
@@ -108,15 +126,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateUI(data: DashboardResponse) {
-        findViewById<TextView>(R.id.tvBalanceValue).text = data.balance
-        findViewById<TextView>(R.id.tvAddressValue).text = shortenKey(data.publicKey)
-        findViewById<TextView>(R.id.tvPrivateKeyValue).text = shortenKey(data.privateKeyPreview)
-        findViewById<TextView>(R.id.tvPositionValue).text = data.positionSize.toString()
-        findViewById<TextView>(R.id.tvPercentage).text = "${data.successRate}%"
+        viewFlipper.getChildAt(SCREEN_MAIN).findViewById<TextView>(R.id.tvBalanceValue).text = data.balance
+        viewFlipper.getChildAt(SCREEN_MAIN).findViewById<TextView>(R.id.tvAddressValue).text = shortenKey(data.publicKey)
+        viewFlipper.getChildAt(SCREEN_MAIN).findViewById<TextView>(R.id.tvPrivateKeyValue).text = shortenKey(data.privateKeyPreview)
+        viewFlipper.getChildAt(SCREEN_MAIN).findViewById<TextView>(R.id.tvPositionValue).text = data.positionSize.toString()
+        viewFlipper.getChildAt(SCREEN_MAIN).findViewById<TextView>(R.id.tvPercentage).text = "${data.successRate}%"
         this.publicKey = data.publicKey
-        findViewById<TextView>(R.id.textView14).text = data.tradesToday.toString()
-        findViewById<TextView>(R.id.textView16).text = data.tradesHourly.toString()
-        findViewById<TextView>(R.id.textView18).text = data.totalTrades.toString()
+        viewFlipper.getChildAt(SCREEN_MAIN).findViewById<TextView>(R.id.textView14).text = data.tradesToday.toString()
+        viewFlipper.getChildAt(SCREEN_MAIN).findViewById<TextView>(R.id.textView16).text = data.tradesHourly.toString()
+        viewFlipper.getChildAt(SCREEN_MAIN).findViewById<TextView>(R.id.textView18).text = data.totalTrades.toString()
 
 
         val inputFmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
@@ -135,14 +153,14 @@ class MainActivity : AppCompatActivity() {
             .map { entries -> entries.sumOf { it.value.toDouble() }.toFloat() }
             .any { it != 0f }
 
-        findViewById<CardView>(R.id.cardPNL).visibility =
+        viewFlipper.getChildAt(SCREEN_MAIN).findViewById<CardView>(R.id.cardPNL).visibility =
             if (hasAny) View.VISIBLE else View.GONE
 
         if (hasAny) setupPnlChart(pnlItems)
     }
 
     private fun setupPnlChart(data: List<PnlItem>) {
-        val container = findViewById<LinearLayout>(R.id.pnlContainer)
+        val container = viewFlipper.getChildAt(SCREEN_MAIN).findViewById<LinearLayout>(R.id.pnlContainer)
         container.removeAllViews()
 
         // 1) Суммируем по дате
@@ -207,6 +225,11 @@ class MainActivity : AppCompatActivity() {
                     viewModel.sendEmail(email) { success, message ->
                         if (success) {
                             viewFlipper.displayedChild = SCREEN_CODE
+                            getSharedPreferences("AppSettings", MODE_PRIVATE)
+                            val prefs = getSharedPreferences("AppSettings", MODE_PRIVATE)
+                            prefs.edit()
+                                .putString(EMAIL, email)
+                                .apply()
                             Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
                         } else {
                             Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show()
@@ -244,6 +267,17 @@ class MainActivity : AppCompatActivity() {
                                 .putLong(PREF_SESSION_TIME, System.currentTimeMillis())
                                 .apply()
                             viewFlipper.displayedChild = SCREEN_MAIN
+                            var token = getSharedPreferences("AppSettings", MODE_PRIVATE)
+                                .getString(PREF_FCM_TOKEN, null)
+                            var email = getSharedPreferences("AppSettings", MODE_PRIVATE)
+                                .getString(EMAIL, null)
+                            viewModel.registerPhone(email = email!!, deviceToken = token!!){ success, errorMessage ->
+                                if (success){
+                                    Toast.makeText(this@MainActivity, "Телефон зарегестрирован", Toast.LENGTH_SHORT).show()
+                                } else{
+                                    Toast.makeText(this@MainActivity, errorMessage, Toast.LENGTH_SHORT).show()
+                                }
+                            }
                             loadDashboardData(userId)
                         } else {
                             Toast.makeText(this@MainActivity, "Ошибка верификации", Toast.LENGTH_SHORT).show()
@@ -259,15 +293,6 @@ class MainActivity : AppCompatActivity() {
             .edit()
             .putInt(PREF_CURRENT_SCREEN, viewFlipper.displayedChild)
             .apply()
-    }
-
-    private fun setAppTheme() {
-        val prefs = getSharedPreferences("AppSettings", MODE_PRIVATE)
-        isDarkTheme = prefs.getBoolean("DarkTheme", false)
-        AppCompatDelegate.setDefaultNightMode(
-            if (isDarkTheme) AppCompatDelegate.MODE_NIGHT_YES
-            else AppCompatDelegate.MODE_NIGHT_NO
-        )
     }
 
     private fun validateEmail(email: String): Boolean {
