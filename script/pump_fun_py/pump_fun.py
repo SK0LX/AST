@@ -16,48 +16,38 @@ from constants import *
 from utils import confirm_txn, get_token_balance
 from coin_data import get_coin_data, sol_for_tokens, tokens_for_sol
 
-def buy(payer_keypair, mint_str: str, sol_in: float = 0.01, slippage: int = 5) -> bool:
+def buy(payer_keypair, mint_str: str, bonding_curve: str, associated_bonding_curve: str, sol_in: float = 0.01, slippage: int = 5) -> bool:
     try:
         print(f"Starting buy transaction for mint: {mint_str}")
-        if not payer_keypair:
-            print("Error: payer_keypair is None")
-            return False
 
         coin_data = get_coin_data(mint_str)
+        
         if not coin_data:
             print("Failed to retrieve coin data.")
             return False
 
         if coin_data.complete:
             print("Warning: This token has bonded and is only tradable on Raydium.")
-            return False
+            return
 
         MINT = coin_data.mint
         BONDING_CURVE = coin_data.bonding_curve
         ASSOCIATED_BONDING_CURVE = coin_data.associated_bonding_curve
         USER = payer_keypair.pubkey()
 
+        print(BONDING_CURVE)
         print("Fetching or creating associated token account...")
-        ASSOCIATED_USER = None
-        token_account_instruction = None
-        for _ in range(3):
+        while True:
             try:
-                accounts = client.get_token_accounts_by_owner(USER, TokenAccountOpts(MINT)).value
-                if accounts:
-                    ASSOCIATED_USER = accounts[0].pubkey
-                    print(f"Token account found: {ASSOCIATED_USER}")
-                    break
-                else:
-                    ASSOCIATED_USER = get_associated_token_address(USER, MINT)
-                    token_account_instruction = create_associated_token_account(USER, USER, MINT)
-                    print(f"Creating token account: {ASSOCIATED_USER}")
-                    time.sleep(2)
-            except Exception as e:
-                print(f"Error fetching token account: {e}")
-                time.sleep(2)
-        if not ASSOCIATED_USER:
-            print("Failed to find or create token account after retries.")
-            return False
+                ASSOCIATED_USER = client.get_token_accounts_by_owner(USER, TokenAccountOpts(MINT)).value[0].pubkey
+                token_account_instruction = None
+                print(f"Token account found: {ASSOCIATED_USER}")
+                break  # Аккаунт найден, выходим из цикла
+            except:
+                ASSOCIATED_USER = get_associated_token_address(USER, MINT)
+                token_account_instruction = create_associated_token_account(USER, USER, MINT)
+                print(f"Creating token account: {ASSOCIATED_USER}")
+                time.sleep(2)  # Ждем 2 секунды перед повторной проверкой
 
         print("Calculating transaction amounts...")
         sol_dec = 1e9
@@ -102,24 +92,23 @@ def buy(payer_keypair, mint_str: str, sol_in: float = 0.01, slippage: int = 5) -
         instructions.append(swap_instruction)
 
         print("Compiling transaction message...")
-        blockhash_resp = client.get_latest_blockhash()
-        if not blockhash_resp.value or not blockhash_resp.value.blockhash:
-            print("Failed to get latest blockhash")
-            return False
         compiled_message = MessageV0.try_compile(
             payer_keypair.pubkey(),
             instructions,
             [],
-            blockhash_resp.value.blockhash,
+            client.get_latest_blockhash().value.blockhash,
         )
 
         print("Sending transaction...")
-        txn = VersionedTransaction(compiled_message, [payer_keypair])
-        txn_sig = client.send_transaction(txn, opts=TxOpts(skip_preflight=True)).value
+        txn_sig = client.send_transaction(
+            txn=VersionedTransaction(compiled_message, [payer_keypair]),
+            opts=TxOpts(skip_preflight=True)
+        ).value
         print(f"Transaction Signature: {txn_sig}")
 
         print("Confirming transaction...")
         confirmed = confirm_txn(txn_sig)
+        
         print(f"Transaction confirmed: {confirmed}")
         return confirmed
 

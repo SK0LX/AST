@@ -14,6 +14,7 @@ from construct import Struct, Int64ul, Flag
 
 from config import *
 from coin_data import get_coin_data, sol_for_tokens, tokens_for_sol
+from pump_fun import buy, sell
 
 EXPECTED_DISCRIMINATOR = struct.pack("<Q", 6966180631402821399)
 TOKEN_DECIMALS = 6
@@ -201,7 +202,7 @@ async def listen_for_create_transaction():
             print(f"Unexpected error in WebSocket: {e}")
             await asyncio.sleep(RECONNECT_DELAY)
 
-async def execute_trade(mint, bonding_curve, position_size, trade_history):
+async def execute_trade(payer_keypair, mint, bonding_curve, associated_bonding_curve, position_size, trade_history):
     delay1, delay2 = generate_times()
     await asyncio.sleep(delay1)
 
@@ -217,6 +218,7 @@ async def execute_trade(mint, bonding_curve, position_size, trade_history):
 
     tp_price = buy_price * TAKE_PROFIT
     sl_price = buy_price * STOP_LOSS
+    buy(payer_keypair, mint, bonding_curve, associated_bonding_curve, BUY_AMOUNT, 5)
     print(f"Bought at {buy_price}. Target TP: {tp_price}, SL: {sl_price}")
     start_time = time.time()
 
@@ -261,4 +263,4 @@ async def trade(user_id, public_key, payer_keypair, position_size, slippage_tole
         bonding_curve = args['bondingCurve']
         associated_bonding_curve = args['associatedBondingCurve']
         print(f"New token detected: {mint}, bonding curve: {bonding_curve}")
-        await execute_trade(mint, bonding_curve, position_size, trade_history)
+        await execute_trade(payer_keypair, mint, bonding_curve, associated_bonding_curve, position_size, trade_history)
