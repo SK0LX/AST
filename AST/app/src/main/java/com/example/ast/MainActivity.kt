@@ -3,6 +3,7 @@ package com.example.ast
 import AuthViewModel
 import android.app.Dialog
 import android.content.SharedPreferences
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.util.Patterns
@@ -48,9 +49,9 @@ class MainActivity : AppCompatActivity() {
         const val SCREEN_MAIN = 2
         const val PREF_CURRENT_SCREEN = "current_screen"
         private var PREF_USER_ID = "USER_ID"
-        private var PREF_SESSION_TIME = "SESSION_TIME"
         private const val PREF_FCM_TOKEN    = "FCM_TOKEN"
         private var EMAIL = "Email"
+        private const val KEY_BOT_ACTIVE = "bot_active"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,21 +72,31 @@ class MainActivity : AppCompatActivity() {
                 .apply()
         }
         setContentView(R.layout.activity_main)
-        val savedScreen = prefs.getInt(PREF_CURRENT_SCREEN, SCREEN_LOGIN)
         viewFlipper = findViewById(R.id.flipper)
-        val (isValidSession, userId) = checkSessionValidity(prefs)
-
-        if (!isValidSession) {
-            // Показываем экран логина при невалидной сессии
-            prefs.edit().remove(PREF_USER_ID).remove(PREF_SESSION_TIME).apply()
-            viewFlipper.displayedChild = SCREEN_LOGIN
-        } else {
-            // Показываем сохраненный экран при валидной сессии
-            val savedScreen = prefs.getInt(PREF_CURRENT_SCREEN, SCREEN_LOGIN)
-            viewFlipper.displayedChild = savedScreen
-            loadDashboardData(prefs.getString(PREF_USER_ID, null).toString())
+        findViewById<Button>(R.id.btnRegSwitch).setOnClickListener{
+            CoroutineScope(Dispatchers.Main).launch {
+                val email = getSharedPreferences("AppSettings", MODE_PRIVATE)
+                    .getString(EMAIL, null)
+                if (email != null) {
+                    viewModel.sendEmail(email) { success, message ->
+                        if (success) {
+                            viewFlipper.displayedChild = SCREEN_CODE
+                            getSharedPreferences("AppSettings", MODE_PRIVATE)
+                            val prefs = getSharedPreferences("AppSettings", MODE_PRIVATE)
+                            prefs.edit()
+                                .putString(EMAIL, email)
+                                .apply()
+                            Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
         }
-
+        val savedScreen = prefs.getInt(PREF_CURRENT_SCREEN, SCREEN_LOGIN)
+        viewFlipper.displayedChild = savedScreen
+        loadDashboardData(prefs.getString(PREF_USER_ID, null).toString())
         viewFlipper.getChildAt(SCREEN_MAIN).findViewById<Button>(R.id.btnBack).setOnClickListener {
             CoroutineScope(Dispatchers.Main).launch {
                 var email = getSharedPreferences("AppSettings", MODE_PRIVATE)
@@ -97,32 +108,54 @@ class MainActivity : AppCompatActivity() {
                     } else{
                         Toast.makeText(this@MainActivity, errorMessage, Toast.LENGTH_SHORT).show()
                     }
-
                 }
             }
+        }
+
+        findViewById<Button>(R.id.btnBackCode).setOnClickListener{
+            viewFlipper.displayedChild = SCREEN_LOGIN
         }
 
         viewFlipper.getChildAt(SCREEN_MAIN).findViewById<Button>(R.id.btnEditSettings).setOnClickListener{
             showWalletDialog()
         }
-
-        viewFlipper.getChildAt(SCREEN_MAIN).findViewById<Switch>(R.id.switch1).setOnCheckedChangeListener { btn, isCheked ->
-            activateBot(btn, isCheked)
-        }
-
+        initCustomSwitch()
         setupLoginScreen()
         setupCodeScreen()
     }
 
-    private fun checkSessionValidity(prefs: SharedPreferences): Pair<Boolean, String?> {
-        val userId = prefs.getString(PREF_USER_ID, null)
-        val sessionTime = prefs.getLong(PREF_SESSION_TIME, 0)
-        val currentTime = System.currentTimeMillis()
+    private fun initCustomSwitch() {
+        val screen = viewFlipper.getChildAt(SCREEN_MAIN)
+        val switchContainer = screen.findViewById<LinearLayout>(R.id.custom_switch_container)
+        val statusDot     = switchContainer.findViewById<View>(R.id.status_dot)
+        val statusText    = switchContainer.findViewById<TextView>(R.id.status_text)
+        val stateSwitch   = switchContainer.findViewById<Switch>(R.id.state_switch)
 
-        return Pair(
-            userId != null && (currentTime - sessionTime) <= 3600000, // 1 час = 3,600,000 мс
-            userId
-        )
+        val prefs = getSharedPreferences(KEY_BOT_ACTIVE, MODE_PRIVATE)
+        val wasOn = prefs.getBoolean(KEY_BOT_ACTIVE, false)
+        stateSwitch.isChecked = wasOn
+        updateSwitchUi(wasOn, statusText, statusDot)
+        stateSwitch.setOnCheckedChangeListener { _, isChecked ->
+            updateSwitchUi(isChecked, statusText, statusDot)
+            prefs.edit().putBoolean(KEY_BOT_ACTIVE, isChecked).apply()
+            activateBot(stateSwitch, isChecked)
+        }
+    }
+
+    private fun updateSwitchUi(
+        isOn: Boolean,
+        statusText: TextView,
+        statusDot: View
+    ) {
+        if (isOn) {
+            statusText.text = "Active"
+            statusText.setTextColor(Color.parseColor("#32CD32"))
+            statusDot.background.setTint(Color.parseColor("#32CD32"))
+        } else {
+            statusText.text = "Inactive"
+            statusText.setTextColor(Color.parseColor("#FF3C00"))
+            statusDot.background.setTint(Color.parseColor("#FF3C00"))
+        }
     }
 
     private fun updateUI(data: DashboardResponse) {
@@ -135,7 +168,18 @@ class MainActivity : AppCompatActivity() {
         viewFlipper.getChildAt(SCREEN_MAIN).findViewById<TextView>(R.id.textView14).text = data.tradesToday.toString()
         viewFlipper.getChildAt(SCREEN_MAIN).findViewById<TextView>(R.id.textView16).text = data.tradesHourly.toString()
         viewFlipper.getChildAt(SCREEN_MAIN).findViewById<TextView>(R.id.textView18).text = data.totalTrades.toString()
-
+        val screen = viewFlipper.getChildAt(SCREEN_MAIN)
+        val switchContainer = screen.findViewById<LinearLayout>(R.id.custom_switch_container)
+        val statusDot     = switchContainer.findViewById<View>(R.id.status_dot)
+        val statusText    = switchContainer.findViewById<TextView>(R.id.status_text)
+        val stateSwitch   = switchContainer.findViewById<Switch>(R.id.state_switch)
+        if (data.status == "active"){
+            stateSwitch.isChecked = true
+            updateSwitchUi(true, statusText, statusDot)
+        } else{
+            stateSwitch.isChecked = false
+            updateSwitchUi(false, statusText, statusDot)
+        }
 
         val inputFmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         val dispFmt  = SimpleDateFormat("MMM dd",   Locale.US)
@@ -264,9 +308,12 @@ class MainActivity : AppCompatActivity() {
                             getSharedPreferences("AppSettings", MODE_PRIVATE)
                                 .edit()
                                 .putString(PREF_USER_ID, userId)
-                                .putLong(PREF_SESSION_TIME, System.currentTimeMillis())
                                 .apply()
                             viewFlipper.displayedChild = SCREEN_MAIN
+                            val prefs = getSharedPreferences("AppSettings", MODE_PRIVATE)
+                            prefs.edit()
+                                .putInt(PREF_CURRENT_SCREEN, SCREEN_MAIN)
+                                .apply()
                             var token = getSharedPreferences("AppSettings", MODE_PRIVATE)
                                 .getString(PREF_FCM_TOKEN, null)
                             var email = getSharedPreferences("AppSettings", MODE_PRIVATE)
