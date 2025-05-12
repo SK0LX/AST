@@ -1,0 +1,87 @@
+# Python-specific #
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pkl
+*.egg-info/
+.eggs/
+*.env
+*.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+menv/
+
+# Config Files #
+config.py
+*.env
+*.ini
+*.toml
+
+# IDEs & Editors #
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS Files #
+.DS_Store
+Thumbs.db
+
+# Logs & Reports #
+*.log
+*.out
+*.txt
+*.pid
+*.gz
+
+# Testing #
+htmlcov/
+.tox/
+.nox/
+coverage.*
+*.cover
+*.py,cover
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Byte-compiled / optimized / DLL files #
+*.py[cod]
+*.pyo
+*.pyd
+
+# Jupyter Notebook #
+.ipynb_checkpoints
+
+# MyPy #
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# PyInstaller #
+/dist/
+/build/
+/__pyinstaller/
+
+# Profiling data #
+.prof
+
+# Docker #
+*.dockerfile
+docker-compose.yml
+
+# PyCharm #
+*.idea/
+*.iml
+
+# Pyright #
+pyrightconfig.json
+
+# DB #
+*.sql

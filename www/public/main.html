@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AST - Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tweetnacl@1.0.3/nacl.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2332CD32' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Ccircle cx='12' cy='12' r='6'/%3E%3Ccircle cx='12' cy='12' r='2'/%3E%3Cpath d='M12 2v4'/%3E%3Cpath d='M12 18v4'/%3E%3Cpath d='M2 12h4'/%3E%3Cpath d='M18 12h4'/%3E%3C/svg%3E">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-hidden {
+            display: none;
+        }
+
+        /* Dark theme styles */
+        body.dark {
+            background-color: #0a0a0a;
+            color: #e5e7eb;
+        }
+        body.dark .logo { color: #ffffff; }
+        body.dark .description { color: #9ca3af; }
+        body.dark .nav-link { 
+            color: #9ca3af; 
+            text-transform: uppercase; 
+            font-size: 0.875rem; 
+            font-weight: 500; 
+        }
+        body.dark .nav-link:hover { color: #ffffff; }
+        body.dark .nav-link.active { 
+            color: #ffffff; 
+            font-weight: 600; 
+        }
+        body.dark .card { 
+            background-color: #0a0a0a; 
+            border: 1px solid #2d2d2d; 
+            border-radius: 0.5rem; 
+        }
+        body.dark .status-dot { 
+            background-color: #2d2d2d; 
+            border-radius: 9999px; 
+            padding: 0.25rem 0.75rem; 
+            display: flex; 
+            align-items: center; 
+            gap: 0.5rem; 
+        }
+        body.dark .status-dot.active { color: #32CD32; }
+        body.dark .status-dot.linking { color: #FFA500; }
+        body.dark .status-dot.inactive { color: #FF4500; }
+        body.dark .highlight { 
+            color: #32CD32; 
+            font-weight: 600; 
+        }
+        body.dark .view-nodes-button { 
+            background-color: transparent; 
+            color: #ffffff; 
+            border: 1px solid #ffffff; 
+            border-radius: 0.5rem; 
+            font-weight: 500; 
+            text-transform: uppercase; 
+            transition: background-color 0.3s ease; 
+        }
+        body.dark .view-nodes-button:hover { 
+            background-color: #2d2d2d; 
+        }
+        body.dark .view-nodes-button:disabled {
+            background-color: transparent;
+            color: #6b7280;
+            border-color: #6b7280;
+            cursor: not-allowed;
+        }
+        body.dark .time-block { color: #e5e7eb; }
+        body.dark .time-block .label { 
+            color: #9ca3af; 
+            font-size: 0.875rem; 
+        }
+        body.dark .time-block .value { 
+            font-size: 1.25rem; 
+            font-weight: 500; 
+            white-space: nowrap; 
+        }
+        body.dark .uptime-graph { 
+            background-color: #0a0a0a; 
+            border: 1px solid #2d2d2d; 
+            border-radius: 0.5rem; 
+            margin-top: 1.5rem; 
+        }
+        body.dark .uptime-graph canvas { 
+            max-height: 200px; 
+            width: 100%; 
+        }
+        body.dark .legend-container { 
+            display: flex; 
+            justify-content: center; 
+            gap: 1rem; 
+            margin-top: 1rem; 
+        }
+        body.dark .legend-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 0.5rem; 
+            font-size: 0.875rem; 
+            color: #9ca3af; 
+        }
+        body.dark .blinking-circle { 
+            animation: blink 1.5s infinite ease-in-out; 
+        }
+        body.dark .time-text { white-space: nowrap; }
+        body.dark .error-message { 
+            color: #FF4500; 
+            font-size: 0.875rem; 
+            margin-top: 0.25rem; 
+        }
+        body.dark .docs-section { padding: 1.5rem; }
+        body.dark .docs-section h4 { color: #32CD32; }
+        body.dark .docs-section p, 
+        body.dark .docs-section li { color: #9ca3af; }
+        body.dark .docs-section .disclaimer-box p { color: #e5e7eb; }
+        body.dark .profile-icon { border: 0px solid #e5e7eb; }
+        body.dark .donate-popup {
+            background-color: #1a1a1a;
+            border: 1px solid #2d2d2d;
+            color: #e5e7eb;
+        }
+        body.dark .donate-popup:hover {
+            background-color: #2d2d2d;
+        }
+        body.dark .theme-toggle svg {
+            fill: #ffffff;
+        }
+        body.dark .wallet-address {
+            color: #32CD32;
+            font-weight: 600;
+        }
+        body.dark .logout-button {
+            color: #9ca3af;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            font-weight: 500;
+            background: none;
+            border: none;
+        }
+        body.dark .logout-button:hover {
+            color: #EF4444;
+        }
+        body.dark .wallet-input {
+            background-color: transparent;
+            border: 1px solid #2d2d2d;
+            color: #e5e7eb;
+            padding: 0.7rem;
+            border-radius: 0.25rem;
+            width: 100%;
+        }
+        body.dark .wallet-input[readonly] {
+            background-color: #1a1a1a;
+            color: #6b7280;
+        }
+        body.dark .language-toggle span {
+            color: #ffffff;
+        }
+
+        /* Light theme styles */
+        body.light {
+            background-color: #ffffff;
+            color: #000000;
+        }
+        body.light .logo { color: #000000; }
+        body.light .description { color: #6b7280; }
+        body.light .nav-link { 
+            color: #6b7280; 
+            text-transform: uppercase; 
+            font-size: 0.875rem; 
+            font-weight: 500; 
+        }
+        body.light .nav-link:hover { color: #000000; }
+        body.light .nav-link.active { 
+            color: #000000; 
+            font-weight: 600; 
+        }
+        body.light .card { 
+            background-color: #ffffff; 
+            border: 1px solid #e5e7eb; 
+            border-radius: 0.5rem; 
+        }
+        body.light .status-dot { 
+            background-color: #e5e7eb; 
+            border-radius: 9999px; 
+            padding: 0.25rem 0.75rem; 
+            display: flex; 
+            align-items: center; 
+            gap: 0.5rem; 
+        }
+        body.light .status-dot.active { color: #32CD32; }
+        body.light .status-dot.linking { color: #FFA500; }
+        body.light .status-dot.inactive { color: #FF4500; }
+        body.light .highlight { 
+            color: #32CD32; 
+            font-weight: 600; 
+        }
+        body.light .view-nodes-button { 
+            background-color: #ffffff; 
+            color: #000000; 
+            border: 1px solid #000000; 
+            border-radius: 0.5rem; 
+            font-weight: 500; 
+            text-transform: uppercase; 
+            transition: background-color 0.3s ease; 
+        }
+        body.light .view-nodes-button:hover { 
+            background-color: #e5e7eb; 
+        }
+        body.light .view-nodes-button:disabled {
+            background-color: #ffffff;
+            color: #6b7280;
+            border-color: #6b7280;
+            cursor: not-allowed;
+        }
+        body.light .time-block { color: #000000; }
+        body.light .time-block .label { 
+            color: #6b7280; 
+            font-size: 0.875rem; 
+        }
+        body.light .time-block .value { 
+            font-size: 1.25rem; 
+            font-weight: 500; 
+            white-space: nowrap; 
+        }
+        body.light .uptime-graph { 
+            background-color: #ffffff; 
+            border: 1px solid #e5e7eb; 
+            border-radius: 0.5rem; 
+            margin-top: 1.5rem; 
+        }
+        body.light .uptime-graph canvas { 
+            max-height: 200px; 
+            width: 100%; 
+        }
+        body.light .legend-container { 
+            display: flex; 
+            justify-content: center; 
+            gap: 1rem; 
+            margin-top: 1rem; 
+        }
+        body.light .legend-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 0.5rem; 
+            font-size: 0.875rem; 
+            color: #6b7280; 
+        }
+        body.light .blinking-circle { 
+            animation: blink 1.5s infinite ease-in-out; 
+        }
+        body.light .time-text { white-space: nowrap; }
+        body.light .error-message { 
+            color: #FF4500; 
+            font-size: 0.875rem; 
+            margin-top: 0.25rem; 
+        }
+        .error-message.hidden {
+            display: none;
+        }
+        body.light .docs-section { padding: 1.5rem; }
+        body.light .docs-section h4 { color: #32CD32; }
+        body.light .docs-section p, 
+        body.light .docs-section li { color: #6b7280; }
+        body.light .docs-section .disclaimer-box p { color: #000000; }
+        body.light .profile-icon { border: 1px solid #6b7280; }
+        body.light .donate-popup {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            color: #000000;
+        }
+        body.light .donate-popup:hover {
+            background-color: #f3f4f6;
+        }
+        body.light .wallet-address {
+            color: #32CD32;
+            font-weight: 600;
+        }
+        body.light .logout-button {
+            color: #6b7280;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            font-weight: 500;
+            background: none;
+            border: none;
+        }
+        body.light .logout-button:hover {
+            color: #EF4444;
+        }
+        body.light .wallet-input {
+            background-color: transparent;
+            border: 1px solid #e5e7eb;
+            color: #000000;
+            padding: 0.7rem;
+            border-radius: 0.25rem;
+            width: 100%;
+        }
+        body.light .wallet-input[readonly] {
+            background-color: #f3f4f6;
+            color: #6b7280;
+        }
+        body.light .language-toggle span {
+            color: #000000;
+        }
+
+        /* Common styles */
+        .top-bar {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            right: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 1.2rem;
+            align-items: center;
+        }
+
+        .theme-toggle, .language-toggle {
+            display: flex;
+            align-items: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.6rem;
+            border-radius: 0.25rem;
+            transition: all 0.3s ease;
+        }
+
+        body.dark .theme-toggle, body.dark .language-toggle {
+            background-color: #2d2d2d;
+            height: 2.5rem;
+            width: 2.5rem;
+        }
+
+        body.light .theme-toggle, body.light .language-toggle {
+            background-color: #f3f4f6;
+            height: 2.5rem;
+            width: 2.5rem;
+        }
+
+        .theme-toggle:hover, .language-toggle:hover {
+            opacity: 0.8;
+        }
+
+        .profile-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .profile-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 2rem;
+            height: calc(100% + 0.5rem);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .profile-container:hover::before {
+            pointer-events: auto;
+        }
+
+        .profile-icon {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            object-fit: cover;
+            cursor: pointer;
+            position: relative;
+            z-index: 10;
+        }
+
+        .donate-popup {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            font-size: 0.875rem;
+            font-weight: 500;
+            opacity: 0;
+            visibility: hidden;
+            z-index: 10;
+            cursor: pointer;
+            transition: opacity 0.3s ease-in-out, background-color 0.2s ease;
+            white-space: nowrap;
+            max-width: 32rem;
+            transform: translateX(0);
+        }
+
+        .profile-container:hover .donate-popup {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+            width: 100%;
+        }
+
+        .content-container {
+            padding-top: 4rem;
+            max-width: 64rem;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .content-container > * + * {
+            margin-top: 1.5rem;
+        }
+
+        .page-content {
+            display: block;
+        }
+
+        .page-content.hidden {
+            display: none;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .card-content > * + * {
+            margin-top: 1rem;
+        }
+
+        .wallet-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .wallet-item > * + * {
+            margin-top: 0.5rem;
+        }
+
+        .wallet-item .indent {
+            padding-left: 1.75rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .wallet-settings > * + * {
+            margin-top: 1.5rem;
+        }
+
+        .wallet-input {
+            margin-top: 0.25rem;
+        }
+
+        h2 {
+            font-size: 1.875rem;
+            font-weight: 600;
+        }
+
+        h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .docs-section > * + * {
+            margin-top: 1.5rem;
+        }
+
+        .docs-section ul {
+            list-style: disc;
+            padding-left: 1.25rem;
+        }
+
+        .docs-section ul > * + * {
+            margin-top: 0.5rem;
+        }
+
+        .toggle-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .success-rate {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .icon-small {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .icon-medium {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        .text-xl {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .toggle-switch input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            width: 2.75rem;
+            height: 1.5rem;
+            background-color: #2d2d2d;
+            border-radius: 9999px;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #eee;
+        }
+
+        .toggle-knob {
+            position: absolute;
+            top: 0.25rem;
+            left: 0.25rem;
+            width: 1rem;
+            height: 1rem;
+            background-color: #ffffff;
+            border-radius: 9999px;
+            transition: transform 0.3s ease-in-out, background-color 0.3s ease-in-out;
+        }
+
+        .toggle-switch input:checked + .toggle-slider .toggle-knob {
+            transform: translateX(1.25rem);
+            background-color: #0a0a0a;
+        }
+
+        #language-text {
+            display: grid;
+            place-items: center;
+            text-align: center;
+        }
+
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+
+        ::-webkit-scrollbar-thumb {  
+            border-radius: 6px;
+        }
+
+        @media (max-width: 640px) {
+            .content-container {
+                padding-top: 3rem;
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            .nav-menu {
+                gap: 0.5rem;
+            }
+            .nav-link {
+                font-size: 0.75rem;
+            }
+            .top-bar {
+                top: 0.5rem;
+                left: 0.5rem;
+                right: 0.5rem;
+            }
+            .header span {
+                font-size: 1rem;
+            }
+            .header svg {
+                height: 1.5rem;
+                width: 1.5rem;
+            }
+            .profile-icon {
+                width: 1.5rem;
+                height: 1.5rem;
+            }
+            .theme-toggle svg, .language-toggle span {
+                height: 1.25rem;
+                width: 1.25rem;
+            }
+            .theme-toggle, .language-toggle {
+                padding: 0.4rem;
+            }
+            .donate-popup {
+                font-size: 0.75rem;
+                padding: 0.5rem 0.75rem;
+            }
+            .logout-button {
+                font-size: 0.75rem;
+                background: none;
+            }
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <div id="main-content" class="content-hidden">
+        <div class="top-bar">
+            <div class="header">
+                <svg class="logo" style="width: 2rem; height: 2rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="6"/>
+                    <circle cx="12" cy="12" r="2"/>
+                    <path d="M12 2v4"/>
+                    <path d="M12 18v4"/>
+                    <path d="M2 12h4"/>
+                    <path d="M18 12h4"/>
+                </svg>
+                <span class="text-xl">AST</span>
+            </div>
+            <div class="nav-menu">
+                <a href="#" class="nav-link" data-page="dash" data-i18n="dashboard">Dashboard</a>
+                <a href="#" class="nav-link" data-page="wallets" data-i18n="wallets">Wallets</a>
+                <a href="#" class="nav-link" data-page="docs" data-i18n="docs">Docs</a>
+                <button class="logout-button" onclick="logout()" data-i18n="logout">Logout</button>
+                <button class="language-toggle" onclick="switchLanguage()">
+                    <span id="language-text">EN</span>
+                </button>
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <svg id="theme-icon" style="width: 1.5rem; height: 1.5rem;" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M21.4 13.7C20.6 13.9 19.8 14 19 14c-5 0-9-4-9-9 0-.8.1-1.6.3-2.4-4.2 1.1-7.3 4.9-7.3 9.4 0 5.5 4.5 10 10 10 4.5 0 8.3-3 9.4-7.3z"/>
+                    </svg>
+                </button>
+                <div class="profile-container">
+                    <img class="profile-icon" src="user.webp" alt="User Profile">
+                    <div class="donate-popup" onclick="copyDonateAddress(event)">
+                        <span data-i18n="donate_wallet">Donate Wallet</span>: <span class="wallet-address">q4tqEU7BJ7GNkazQAKci7X1DBPj8jRzWyFpn6TzZBpe</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+            <div class="content-container">
+                <h2 id="page-title" data-i18n="dashboard">Dashboard</h2>
+                <!-- Dashboard Content -->
+                <div id="dash-content" class="page-content">
+                    <div class="grid-container">
+                        <!-- Wallet Management Card -->
+                        <div class="card">
+                            <div class="card-content">
+                                <div class="toggle-container">
+                                    <h3 data-i18n="asset_vault">Asset Vault</h3>
+                                    <div class="toggle-group">
+                                        <span id="status-dot" class="status-dot inactive">
+                                            <svg class="icon-small" viewBox="0 0 24 24" fill="currentColor">
+                                                <circle cx="12" cy="12" r="6"/>
+                                            </svg>
+                                            <span data-i18n="inactive">Inactive</span>
+                                        </span>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="bot-toggle" onchange="toggleBotStatus(this)">
+                                            <div class="toggle-slider">
+                                                <div class="toggle-knob"></div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <p class="description" data-i18n="asset_vault_description">
+                                    Manage your Solana wallet for token sniping.
+                                </p>
+                                <div class="wallet-grid">
+                                    <div class="wallet-item">
+                                        <div class="status-group">
+                                            <svg class="icon-medium" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="3"/>
+                                            </svg>
+                                            <span class="font-medium" data-i18n="balance">Balance</span>
+                                        </div>
+                                        <div class="indent">
+                                            <p class="highlight" id="balance-display">0 SOL</p>
+                                        </div>
+                                    </div>
+                                    <div class="wallet-item">
+                                        <div class="status-group">
+                                            <svg class="icon-medium" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="3"/>
+                                            </svg>
+                                            <span class="font-medium" data-i18n="wallet_address">Wallet Address</span>
+                                        </div>
+                                        <div class="indent">
+                                            <p class="description" id="public-key-display">Not set</p>
+                                        </div>
+                                    </div>
+                                    <div class="wallet-item">
+                                        <div class="status-group">
+                                            <svg class="icon-medium" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="3"/>
+                                            </svg>
+                                            <span class="font-medium" data-i18n="private_key">Private Key</span>
+                                        </div>
+                                        <div class="indent">
+                                            <p class="description" id="private-key-display">Not set</p>
+                                        </div>
+                                    </div>
+                                    <div class="wallet-item">
+                                        <div class="status-group">
+                                            <svg class="icon-medium" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="3"/>
+                                            </svg>
+                                            <span class="font-medium" data-i18n="position_size">Position Size</span>
+                                        </div>
+                                        <div class="indent">
+                                            <p id="position-size-display">--%</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="view-nodes-button" style="width: 100%; padding: 0.5rem;" onclick="setActivePage('wallets')" data-i18n="edit_settings">
+                                    Edit Settings
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Trade Statistics Card -->
+                        <div class="card">
+                            <div class="card-content">
+                                <h3 data-i18n="trade_statistics">Trade Statistics</h3>
+                                <p class="description" data-i18n="trade_statistics_description">
+                                    Overview of your sniping activity.
+                                </p>
+                                <div class="success-rate">
+                                    <span class="highlight" style="font-size: 1.25rem;" id="success-rate-display">0 %</span>
+                                    <svg class="icon-small blinking-circle" viewBox="0 0 24 24" fill="#32CD32">
+                                        <circle cx="12" cy="12" r="6"/>
+                                    </svg>
+                                </div>
+                                <div class="stats-grid">
+                                    <div class="time-block">
+                                        <p class="label" data-i18n="trades_today">Trades Today</p>
+                                        <p class="value" id="trades-today-display">0</p>
+                                    </div>
+                                    <div class="time-block">
+                                        <p class="label" data-i18n="trades_hourly">Trades Hourly</p>
+                                        <p class="value" id="trades-hourly-display">0</p>
+                                    </div>
+                                    <div class="time-block">
+                                        <p class="label" data-i18n="total_trades">Total Trades</p>
+                                        <p class="value" id="total-trades-display">0</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PNL Graph -->
+                    <div class="uptime-graph">
+                        <div class="card-content">
+                            <h3 data-i18n="pnl_performance">PNL Performance</h3>
+                            <p class="description" style="margin-bottom: 1rem;" data-i18n="pnl_performance_description">
+                                Your profit/loss in SOL over the last 14 days.
+                            </p>
+                            <div class="chart-container">
+                                <canvas id="uptimeChart"></canvas>
+                            </div>
+                            <div class="legend-container">
+                                <div class="legend-item">
+                                    <svg class="icon-small" viewBox="0 0 24 24" fill="rgba(46, 125, 50, 0.9)">
+                                        <circle cx="12" cy="12" r="6"/>
+                                    </svg>
+                                    <span data-i18n="profit">Profit</span>
+                                </div>
+                                <div class="legend-item">
+                                    <svg class="icon-small" viewBox="0 0 24 24" fill="rgba(211, 47, 47, 0.9)">
+                                        <circle cx="12" cy="12" r="6"/>
+                                    </svg>
+                                    <span data-i18n="loss">Loss</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wallets Content -->
+                <div id="wallets-content" class="page-content hidden">
+                    <div class="card">
+                        <div class="card-content">
+                            <h3 data-i18n="wallet_settings">Wallet Settings</h3>
+                            <p class="description" data-i18n="wallet_settings_description">
+                                Manage your Solana wallets and sniping preferences.
+                            </p>
+                            <div class="wallet-settings">
+                                <div>
+                                    <label class="block text-sm font-medium" data-i18n="private_key">Private Key</label>
+                                    <input type="text" id="private-key-input" class="wallet-input" placeholder="Enter your Solana private key" data-i18n-placeholder="enter_private_key">
+                                    <p id="private-key-error" class="error-message hidden" data-i18n="invalid_private_key">Invalid Solana private key.</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium" data-i18n="primary_wallet_address">Primary Wallet Address</label>
+                                    <input type="text" id="public-key-input" class="wallet-input" readonly>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium" data-i18n="position_size">Position Size (%)</label>
+                                    <input type="number" id="position-size-input" class="wallet-input" min="2" max="50">
+                                    <p id="position-size-error" class="error-message hidden" data-i18n="position_size_error">Position Size must be between 2% and 50%.</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium" data-i18n="slippage_tolerance">Slippage Tolerance (%)</label>
+                                    <input type="number" id="slippage-tolerance-input" class="wallet-input" min="1" max="10" step="0.1">
+                                    <p id="slippage-tolerance-error" class="error-message hidden" data-i18n="slippage_tolerance_error">Slippage Tolerance must be between 1% and 10%.</p>
+                                </div>
+                                <button class="view-nodes-button" style="width: 100%; padding: 0.5rem;" id="save-settings-button" onclick="saveWalletSettings()" disabled data-i18n="save_changes">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Docs Content -->
+                <div id="docs-content" class="page-content hidden">
+                    <div class="card">
+                        <div class="card-content">
+                            <div class="docs-section">
+                                <div>
+                                    <h4 class="text-md font-semibold" data-i18n="overview">Overview</h4>
+                                    <p class="description" data-i18n="overview_description">
+                                        The Automatic Sniper Tool (AST) is designed to empower users to snipe newly launched tokens on the Solana blockchain with precision and speed. By leveraging an on-chain scanner and a machine learning (ML) model, AST identifies and filters tokens with positive expected value, enabling users to capitalize on early opportunities.
+                                    </p>
+                                </div>
+                                <div>
+                                    <h4 class="text-md font-semibold" data-i18n="core_objective">Core Objective</h4>
+                                    <p class="description" data-i18n="core_objective_description">
+                                        AST automates the process of sniping new tokens on Solana by scanning the blockchain in real-time and using an ML model to predict token potential, ensuring users can act swiftly and efficiently.
+                                    </p>
+                                </div>
+                                <div>
+                                    <h4 class="text-md font-semibold" data-i18n="architecture">Architecture</h4>
+                                    <ul class="description">
+                                        <li data-i18n="blockchain_scanner"><strong>Blockchain Scanner:</strong> A server-side script continuously scans the Solana blockchain via API requests to nodes, detecting new token launches.</li>
+                                        <li data-i18n="ml_model"><strong>ML Model:</strong> An integrated machine learning model filters tokens based on their potential for positive mathematical expectation, prioritizing high-value opportunities.</li>
+                                        <li data-i18n="user_interfaces"><strong>User Interfaces:</strong> Access AST through a web application, an Android app, or a Telegram Mini App, providing flexibility and convenience.</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h4 class="text-md font-semibold" data-i18n="user_access_workflow">User Access & Workflow</h4>
+                                    <ul class="description">
+                                        <li data-i18n="authorization"><strong>Authorization:</strong> Users log in to access a dashboard displaying trade logs, wallet balances, and sniping activity.</li>
+                                        <li data-i18n="private_key_handling"><strong>Private Key Handling:</strong> Your private key is transmitted via a secure protocol, stored only in RAM during operation, and never persisted on disk.</li>
+                                        <li data-i18n="fund_management"><strong>Fund Management:</strong> AST does not custody your funds. Instead, you delegate token management rights to the tool while your assets remain in your wallet.</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h4 class="text-md font-semibold" data-i18n="security_transparency">Security & Transparency</h4>
+                                    <ul class="description">
+                                        <li data-i18n="open_source"><strong>Open Source:</strong> AST's codebase is fully open source, allowing users to audit and verify its security.</li>
+                                        <li data-i18n="delegated_control"><strong>Delegated Control:</strong> Fund management occurs through delegation, ensuring your assets never leave your wallet.</li>
+                                        <li data-i18n="secure_key_handling"><strong>Secure Key Handling:</strong> Private keys are stored in RAM during use and are not saved, minimizing exposure risks.</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h4 class="text-md font-semibold" data-i18n="business_model">Business Model</h4>
+                                    <p class="description" data-i18n="business_model_description">
+                                        For the MVP, AST operates on a profit-sharing model or voluntary donations. A small commission may be applied on profits, ensuring sustainability while keeping the tool accessible.
+                                    </p>
+                                </div>
+                                <div>
+                                    <h4 class="text-md font-semibold" data-i18n="competitive_advantage">Competitive Advantage</h4>
+                                    <p class="description" data-i18n="competitive_advantage_description">
+                                        AST offers lightning-fast token filtering, processing each Solana block in just <span class="highlight">0.4 seconds</span>. This speed ensures you’re among the first buyers, maximizing your chances of securing high-potential tokens before others.
+                                    </p>
+                                </div>
+                                <div>
+                                    <h4 class="text-md font-semibold" data-i18n="support">Support</h4>
+                                    <p class="description" data-i18n="support_description">
+                                        Need assistance? Reach out to our team at <a href="mailto:support@ast.io" class="underline highlight">support@ast.io</a>. We’re here to help you make the most of AST.
+                                    </p>
+                                </div>
+                                <div>
+                                    <h4 class="text-md font-semibold" data-i18n="disclaimer_terms">Disclaimer & Terms of Use</h4>
+                                    <div class="disclaimer-box">
+                                        <p class="text-sm" data-i18n="disclaimer_content">
+                                            This software is open source and provided "as is". No guarantees of profit or functionality are given. You are solely responsible for all risks, taxes, and legal compliance. I do not manage your funds; I only provide a tool for swaps on Pump.fun via a trusted contract. AML risks are your responsibility. The key is stored in RAM and not saved. Profit share in SOL (if applicable) is a fee for the software, transferred manually by you. By using it, you accept all terms.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+        const base58 = {
+            decode: string => {
+                const bytes = [0];
+                for (let i = 0; i < string.length; i++) {
+                    const value = BASE58_ALPHABET.indexOf(string[i]);
+                    if (value < 0) throw new Error('Invalid base58 character');
+                    for (let j = 0; j < bytes.length; j++) bytes[j] *= 58;
+                    bytes[0] += value;
+                    let carry = 0;
+                    for (let j = 0; j < bytes.length; j++) {
+                        carry = (bytes[j] / 256) | 0;
+                        bytes[j] %= 256;
+                        if (carry && j + 1 === bytes.length) bytes.push(0);
+                        if (j + 1 < bytes.length) bytes[j + 1] += carry;
+                    }
+                }
+                while (string[0] === '1' && bytes[bytes.length - 1] === 0) bytes.pop();
+                return Uint8Array.from(bytes.reverse());
+            },
+            encode: bytes => {
+                const digits = [0];
+                for (let i = 0; i < bytes.length; i++) {
+                    for (let j = 0; j < digits.length; j++) digits[j] *= 256;
+                    digits[0] += bytes[i];
+                    let carry = 0;
+                    for (let j = 0; j < digits.length; j++) {
+                        carry = (digits[j] / 58) | 0;
+                        digits[j] %= 58;
+                        if (carry && j + 1 === digits.length) digits.push(0);
+                        if (j + 1 < digits.length) digits[j + 1] += carry;
+                    }
+                }
+                let string = '';
+                while (digits[digits.length - 1] === 0) digits.pop();
+                for (let i = digits.length - 1; i >= 0; i--) string += BASE58_ALPHABET[digits[i]];
+                for (let i = 0; i < bytes.length && bytes[i] === 0; i++) string = '1' + string;
+                return string;
+            }
+        };
+
+        function arraysEqual(a, b) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+            return true;
+        }
+
+        function validatePrivateKey(privateKeyBase58) {
+            try {
+                const keypairBytes = base58.decode(privateKeyBase58);
+                if (keypairBytes.length !== 64) throw new Error(translations[currentLanguage].invalid_key_length || 'Invalid key length: expected 64 bytes');
+                const privateKeyBytes = keypairBytes.slice(0, 32);
+                const providedPublicKeyBytes = keypairBytes.slice(32);
+                const derivedKeypair = nacl.sign.keyPair.fromSeed(privateKeyBytes);
+                if (!arraysEqual(derivedKeypair.publicKey, providedPublicKeyBytes)) throw new Error(translations[currentLanguage].public_key_mismatch || 'Public key mismatch');
+                return base58.encode(providedPublicKeyBytes);
+            } catch (error) {
+                console.error('Invalid private key:', error.message);
+                document.getElementById('private-key-error').textContent = error.message;
+                document.getElementById('private-key-error').classList.remove('hidden');
+                return null;
+            }
+        }
+
+        function updatePublicKey() {
+            const privateKeyInput = document.getElementById('private-key-input').value.trim();
+            const publicKeyInput = document.getElementById('public-key-input');
+            const publicKey = validatePrivateKey(privateKeyInput);
+            if (publicKey) {
+                const shortPublicKey = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
+                publicKeyInput.value = shortPublicKey;
+                document.getElementById('private-key-error').classList.add('hidden');
+                return { publicKey, privateKey: privateKeyInput };
+            }
+            return null;
+        }
+
+        let currentPublicKey = null;
+
+        // Language translations
+        const translations = {
+            en: {
+                dashboard: "Dashboard",
+                wallets: "Wallets",
+                docs: "Docs",
+                logout: "Logout",
+                donate_wallet: "Donate Wallet",
+                asset_vault: "Asset Vault",
+                inactive: "Inactive",
+                active: "Active",
+                linking: "Linking",
+                asset_vault_description: "Manage your Solana wallet for token sniping.",
+                balance: "Balance",
+                wallet_address: "Wallet Address",
+                private_key: "Private Key",
+                position_size: "Position Size",
+                edit_settings: "Edit Settings",
+                trade_statistics: "Trade Statistics",
+                trade_statistics_description: "Overview of your sniping activity.",
+                trades_today: "Trades Today",
+                trades_hourly: "Trades Hourly",
+                total_trades: "Total Trades",
+                pnl_performance: "PNL Performance",
+                pnl_performance_description: "Your profit/loss in SOL over the last 14 days.",
+                profit: "Profit",
+                loss: "Loss",
+                wallet_settings: "Wallet Settings",
+                wallet_settings_description: "Manage your Solana wallets and sniping preferences.",
+                enter_private_key: "Enter your Solana private key",
+                invalid_private_key: "Invalid Solana private key.",
+                primary_wallet_address: "Primary Wallet Address",
+                position_size_error: "Position Size must be between 2% and 50%.",
+                slippage_tolerance: "Slippage Tolerance (%)",
+                slippage_tolerance_error: "Slippage Tolerance must be between 1% and 10%.",
+                save_changes: "Save Changes",
+                overview: "Overview",
+                overview_description: "The Automatic Sniper Tool (AST) is designed to empower users to snipe newly launched tokens on the Solana blockchain with precision and speed. By leveraging an on-chain scanner and a machine learning (ML) model, AST identifies and filters tokens with positive expected value, enabling users to capitalize on early opportunities.",
+                core_objective: "Core Objective",
+                core_objective_description: "AST automates the process of sniping new tokens on Solana by scanning the blockchain in real-time and using an ML model to predict token potential, ensuring users can act swiftly and efficiently.",
+                architecture: "Architecture",
+                blockchain_scanner: "<strong>Blockchain Scanner:</strong> A server-side script continuously scans the Solana blockchain via API requests to nodes, detecting new token launches.",
+                ml_model: "<strong>ML Model:</strong> An integrated machine learning model filters tokens based on their potential for positive mathematical expectation, prioritizing high-value opportunities.",
+                user_interfaces: "<strong>User Interfaces:</strong> Access AST through a web application, an Android app, or a Telegram Mini App, providing flexibility and convenience.",
+                user_access_workflow: "User Access & Workflow",
+                authorization: "<strong>Authorization:</strong> Users log in to access a dashboard displaying trade logs, wallet balances, and sniping activity.",
+                private_key_handling: "<strong>Private Key Handling:</strong> Your private key is transmitted via a secure protocol, stored only in RAM during operation, and never persisted on disk.",
+                fund_management: "<strong>Fund Management:</strong> AST does not custody your funds. Instead, you delegate token management rights to the tool while your assets remain in your wallet.",
+                security_transparency: "Security & Transparency",
+                open_source: "<strong>Open Source:</strong> AST's codebase is fully open source, allowing users to audit and verify its security.",
+                delegated_control: "<strong>Delegated Control:</strong> Fund management occurs through delegation, ensuring your assets never leave your wallet.",
+                secure_key_handling: "<strong>Secure Key Handling:</strong> Private keys are stored in RAM during use and are not saved, minimizing exposure risks.",
+                business_model: "Business Model",
+                business_model_description: "For the MVP, AST operates on a profit-sharing model or voluntary donations. A small commission may be applied on profits, ensuring sustainability while keeping the tool accessible.",
+                competitive_advantage: "Competitive Advantage",
+                competitive_advantage_description: "AST offers lightning-fast token filtering, processing each Solana block in just <span class=\"highlight\">0.4 seconds</span>. This speed ensures you’re among the first buyers, maximizing your chances of securing high-potential tokens before others.",
+                support: "Support",
+                support_description: "Need assistance? Reach out to our team at <a href=\"mailto:support@ast.io\" class=\"underline highlight\">support@ast.io</a>. We’re here to help you make the most of AST.",
+                disclaimer_terms: "Disclaimer & Terms of Use",
+                disclaimer_content: "This software is open source and provided \"as is\". No guarantees of profit or functionality are given. You are solely responsible for all risks, taxes, and legal compliance. I do not manage your funds; I only provide a tool for swaps on Pump.fun via a trusted contract. AML risks are your responsibility. The key is stored in RAM and not saved. Profit share in SOL (if applicable) is a fee for the software, transferred manually by you. By using it, you accept all terms.",
+                invalid_key_length: "Invalid key length: expected 64 bytes",
+                public_key_mismatch: "Public key mismatch",
+                private_key_required: "Private key is required for first setup."
+            },
+            ru: {
+                dashboard: "Панель",
+                wallets: "Кошельки",
+                docs: "Доки",
+                logout: "Выйти",
+                donate_wallet: "Донаты",
+                asset_vault: "Хранилище активов",
+                inactive: "Неактивно",
+                active: "Активно",
+                linking: "Подключение",
+                asset_vault_description: "Управление кошельком Solana.",
+                balance: "Баланс",
+                wallet_address: "Адрес кошелька",
+                private_key: "Приватный ключ",
+                position_size: "Размер позиции",
+                edit_settings: "Редактировать настройки",
+                trade_statistics: "Статистика торгов",
+                trade_statistics_description: "Обзор вашей активности по снайпингу.",
+                trades_today: "Сделки сегодня",
+                trades_hourly: "Сделки за час",
+                total_trades: "Всего сделок",
+                pnl_performance: "Производительность PNL",
+                pnl_performance_description: "Ваши прибыли/убытки в SOL за последние 14 дней.",
+                profit: "Прибыль",
+                loss: "Убыток",
+                wallet_settings: "Настройки кошелька",
+                wallet_settings_description: "Управляйте своими кошельками Solana и предпочтениями для снайпинга.",
+                enter_private_key: "Введите ваш приватный ключ Solana",
+                invalid_private_key: "Недействительный приватный ключ Solana.",
+                primary_wallet_address: "Основной адрес кошелька",
+                position_size_error: "Размер позиции должен быть от 2% до 50%.",
+                slippage_tolerance: "Допуск проскальзывания (%)",
+                slippage_tolerance_error: "Допуск проскальзывания должен быть от 1% до 10%.",
+                save_changes: "Сохранить изменения",
+                overview: "Обзор",
+                overview_description: "Инструмент автоматического снайпинга (AST) разработан для того, чтобы пользователи могли с высокой точностью и скоростью снайпить недавно запущенные токены на блокчейне Solana. Используя сканер на блокчейне и модель машинного обучения (ML), AST идентифицирует и фильтрует токены с положительным ожидаемым значением, позволяя пользователям использовать ранние возможности.",
+                core_objective: "Основная цель",
+                core_objective_description: "AST автоматизирует процесс снайпинга новых токенов на Solana, сканируя блокчейн в реальном времени и используя модель ML для прогнозирования потенциала токенов, обеспечивая быстрые и эффективные действия пользователей.",
+                architecture: "Архитектура",
+                blockchain_scanner: "<strong>Сканер блокчейна:</strong> Серверный скрипт непрерывно сканирует блокчейн Solana через API-запросы к узлам, обнаруживая новые запуски токенов.",
+                ML_model: "<strong>Модель ML:</strong> Интегрированная модель машинного обучения фильтрует токены на основе их потенциала для положительного математического ожидания, приоритизируя возможности с высокой ценностью.",
+                user_interfaces: "<strong>Пользовательские интерфейсы:</strong> Доступ к AST через веб-приложение, приложение для Android или мини-приложение Telegram, обеспечивая гибкость и удобство.",
+                user_access_workflow: "Доступ и рабочий процесс пользователя",
+                authorization: "<strong>Авторизация:</strong> Пользователи входят в систему, чтобы получить доступ к панели управления, отображающей журналы торгов, балансы кошельков и активность по снайпингу.",
+                private_key_handling: "<strong>Обработка приватного ключа:</strong> Ваш приватный ключ передается через безопасный протокол, хранится только в оперативной памяти во время работы и никогда не сохраняется на диске.",
+                fund_management: "<strong>Управление средствами:</strong> AST не хранит ваши средства. Вместо этого вы делегируете права управления токенами инструменту, в то время как ваши активы остаются в вашем кошельке.",
+                security_transparency: "Безопасность и прозрачность",
+                open_source: "<strong>Открытый исходный код:</strong> Кодовая база AST полностью открыта, что позволяет пользователям проверять и подтверждать её безопасность.",
+                delegated_control: "<strong>Делегированное управление:</strong> Управление средствами осуществляется через делегирование, гарантируя, что ваши активы никогда не покидают ваш кошелёк.",
+                secure_key_handling: "<strong>Безопасная обработка ключей:</strong> Приватные ключи хранятся в оперативной памяти во время использования и не сохраняются, минимизируя риски раскрытия.",
+                business_model: "Бизнес-модель",
+                business_model_description: "Для MVP AST работает по модели разделения прибыли или добровольных пожертвований. Небольшая комиссия может взиматься с прибыли, обеспечивая устойчивость и сохраняя доступность инструмента.",
+                competitive_advantage: "Конкурентное преимущество",
+                competitive_advantage_description: "AST предлагает молниеносную фильтрацию токенов, обрабатывая каждый блок Solana всего за <span class=\"highlight\">0,4 секунды</span>. Эта скорость гарантирует, что вы будете среди первых покупателей, максимизируя ваши шансы на получение высокопотенциальных токенов раньше других.",
+                support: "Поддержка",
+                support_description: "Нужна помощь? Свяжитесь с нашей командой по адресу <a href=\"mailto:support@ast.io\" class=\"underline highlight\">support@ast.io</a>. Мы здесь, чтобы помочь вам максимально эффективно использовать AST.",
+                disclaimer_terms: "Отказ от ответственности и условия использования",
+                disclaimer_content: "Это программное обеспечение с открытым исходным кодом предоставляется \"как есть\". Никаких гарантий прибыли или функциональности не предоставляется. Вы несете полную ответственность за все риски, налоги и соблюдение законодательства. Я не управляю вашими средствами; я предоставляю только инструмент для обмена на Pump.fun через доверенный контракт. Риски AML — ваша ответственность. Ключ хранится в оперативной памяти и не сохраняется. Доля прибыли в SOL (если применимо) — это плата за программное обеспечение, переведенная вами вручную. Используя его, вы принимаете все условия.",
+                invalid_key_length: "Недействительная длина ключа: ожидается 64 байта",
+                public_key_mismatch: "Несоответствие публичного ключа",
+                private_key_required: "Приватный ключ требуется для первой настройки."
+            }
+        };
+
+        let currentLanguage = 'en';
+
+        function switchLanguage() {
+            currentLanguage = currentLanguage === 'en' ? 'ru' : 'en';
+            document.getElementById('language-text').textContent = currentLanguage === 'en' ? 'EN' : 'RU';
+            document.documentElement.lang = currentLanguage;
+            updateContent();
+            localStorage.setItem('language', currentLanguage);
+        }
+
+        function updateContent() {
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                const translation = translations[currentLanguage][key] || translations.en[key];
+                // Check if the translation contains HTML tags
+                if (translation.includes('<') && translation.includes('>')) {
+                    element.innerHTML = translation;
+                } else {
+                    element.textContent = translation;
+                }
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+                const key = element.getAttribute('data-i18n-placeholder');
+                element.placeholder = translations[currentLanguage][key] || translations.en[key];
+            });
+            // Update page title dynamically
+            const activePage = localStorage.getItem('activePage') || 'dash';
+            document.getElementById('page-title').textContent = translations[currentLanguage][activePage] || translations.en[activePage];
+            // Update status dot text
+            const statusDot = document.getElementById('status-dot');
+            const status = statusDot.classList.contains('active') ? 'active' : statusDot.classList.contains('linking') ? 'linking' : 'inactive';
+            statusDot.innerHTML = `
+                <svg class="icon-small" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="12" r="6"/>
+                </svg>
+                ${translations[currentLanguage][status] || translations.en[status]}
+            `;
+        }
+
+        function validateInputs() {
+            const privateKeyInput = document.getElementById('private-key-input').value.trim();
+            const positionSize = parseFloat(document.getElementById('position-size-input').value);
+            const slippageTolerance = parseFloat(document.getElementById('slippage-tolerance-input').value);
+            const saveButton = document.getElementById('save-settings-button');
+
+            let isValid = true;
+
+            // Validate Private Key
+            if (privateKeyInput) {
+                const keys = updatePublicKey();
+                if (!keys) {
+                    isValid = false;
+                } else {
+                    document.getElementById('private-key-error').classList.add('hidden');
+                }
+            } else {
+                if (!currentPublicKey) {
+                    document.getElementById('private-key-error').textContent = translations[currentLanguage].private_key_required || 'Private key is required for first setup.';
+                    document.getElementById('private-key-error').classList.remove('hidden');
+                    isValid = false;
+                } else {
+                    document.getElementById('private-key-error').classList.add('hidden');
+                }
+            }
+
+            // Validate Position Size
+            if (document.getElementById('position-size-input').value === '' || isNaN(positionSize) || positionSize < 2 || positionSize > 50) {
+                document.getElementById('position-size-error').textContent = translations[currentLanguage].position_size_error || 'Position Size must be between 2% and 50%.';
+                document.getElementById('position-size-error').classList.remove('hidden');
+                isValid = false;
+            } else {
+                document.getElementById('position-size-error').classList.add('hidden');
+            }
+
+            // Validate Slippage Tolerance
+            if (document.getElementById('slippage-tolerance-input').value === '' || isNaN(slippageTolerance) || slippageTolerance < 1 || slippageTolerance > 10) {
+                document.getElementById('slippage-tolerance-error').textContent = translations[currentLanguage].slippage_tolerance_error || 'Slippage Tolerance must be between 1% and 10%.';
+                document.getElementById('slippage-tolerance-error').classList.remove('hidden');
+                isValid = false;
+            } else {
+                document.getElementById('slippage-tolerance-error').classList.add('hidden');
+            }
+
+            saveButton.disabled = !isValid;
+        }
+
+        async function checkAuth() {
+            const userId = localStorage.getItem('userId');
+            if (!userId) {
+                window.location.href = '/login.html';
+                return false;
+            }
+            try {
+                const response = await fetch(`/check-auth?userId=${userId}`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                if (!response.ok) throw new Error('Auth check failed');
+                const data = await response.json();
+                if (!data.authenticated) {
+                    localStorage.removeItem('userId');
+                    window.location.href = '/login.html';
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Error checking auth:', error);
+                localStorage.removeItem('userId');
+                window.location.href = '/login.html';
+                return false;
+            }
+        }
+
+        async function logout() {
+            const userId = localStorage.getItem('userId');
+            if (userId) {
+                try {
+                    await fetch('/logout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId }),
+                    });
+                } catch (error) {
+                    console.error('Error during logout:', error);
+                }
+            }
+            localStorage.removeItem('userId');
+            window.location.href = '/login.html';
+        }
+
+        function setTheme(theme) {
+            const body = document.body;
+            const themeIcon = document.getElementById('theme-icon');
+            if (theme === 'dark') {
+                body.classList.remove('light');
+                body.classList.add('dark');
+                themeIcon.innerHTML = `<path d="M21.4 13.7C20.6 13.9 19.8 14 19 14c-5 0-9-4-9-9 0-.8.1-1.6.3-2.4-4.2 1.1-7.3 4.9-7.3 9.4 0 5.5 4.5 10 10 10 4.5 0 8.3-3 9.4-7.3z"/>`;
+            } else {
+                body.classList.remove('dark');
+                body.classList.add('light');
+                themeIcon.innerHTML = `<circle cx="12" cy="12" r="4"/><circle cx="12" cy="4" r="1"/><circle cx="12" cy="20" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="20" cy="12" r="1"/><circle cx="6.34" cy="6.34" r="1"/><circle cx="17.66" cy="17.66" r="1"/><circle cx="6.34" cy="17.66" r="1"/><circle cx="17.66" cy="6.34" r="1"/>`;
+            }
+            if (chartInstance) {
+                updateChartColors(theme);
+            }
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
+            setTheme(newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        function setActivePage(page) {
+            document.querySelectorAll('.page-content').forEach(content => content.classList.add('hidden'));
+            document.getElementById(`${page}-content`).classList.remove('hidden');
+            document.getElementById('page-title').textContent = translations[currentLanguage][page] || translations.en[page];
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.toggle('active', link.getAttribute('data-page') === page);
+            });
+            localStorage.setItem('activePage', page);
+            if (page === 'wallets') {
+                validateInputs();
+            }
+        }
+
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                setActivePage(link.getAttribute('data-page'));
+            });
+        });
+
+        let chartInstance;
+
+        function formatDate(date) {
+            return date.toLocaleString(currentLanguage === 'en' ? 'en-US' : 'ru-RU', { month: 'short', day: 'numeric' });
+        }
+
+        function getLast14Days() {
+            const dates = [];
+            const today = new Date();
+            for (let i = 13; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                dates.push(formatDate(date));
+            }
+            return dates;
+        }
+
+        function formatToSignificant(value) {
+            if (value === 0) return '0 SOL';
+            const absValue = Math.abs(value);
+            if (absValue >= 1) return `${value.toFixed(3)} SOL`;
+            const digits = -Math.floor(Math.log10(absValue)) + 1;
+            return `${value.toFixed(Math.min(digits, 9))} SOL`;
+        }
+
+        function createChart(theme) {
+            const ctx = document.getElementById('uptimeChart').getContext('2d');
+            const isLightTheme = theme === 'light';
+            const gridColor = isLightTheme ? '#e5e7eb' : '#2d2d2d';
+            const tickColor = isLightTheme ? '#6b7280' : '#9ca3af';
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: getLast14Days(),
+                    datasets: [{
+                        label: translations[currentLanguage].pnl_performance || 'PNL',
+                        data: Array(14).fill(0),
+                        rawData: Array(14).fill(0),
+                        backgroundColor: data => data.raw >= 0 ? 'rgba(46, 125, 50, 0.9)' : 'rgba(211, 47, 47, 0.9)',
+                        borderWidth: 0,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const rawValue = context.dataset.rawData[context.dataIndex];
+                                    return `${translations[currentLanguage].pnl_performance || 'PNL'}: ${formatToSignificant(rawValue)}`;
+                                }
+                            },
+                            padding: 10,
+                            bodyFont: { size: 14 },
+                            displayColors: false,
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: tickColor } },
+                        y: { 
+                            beginAtZero: true,
+                            ticks: { 
+                                color: tickColor, 
+                                callback: value => formatToSignificant(value),
+                                stepSize: null
+                            }, 
+                            grid: { color: gridColor }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChartColors(theme) {
+            const isLightTheme = theme === 'light';
+            const gridColor = isLightTheme ? '#e5e7eb' : '#2d2d2d';
+            const tickColor = isLightTheme ? '#6b7280' : '#9ca3af';
+            
+            chartInstance.options.scales.x.ticks.color = tickColor;
+            chartInstance.options.scales.y.ticks.color = tickColor;
+            chartInstance.options.scales.y.grid.color = gridColor;
+            chartInstance.data.labels = getLast14Days(); // Update labels for language
+            chartInstance.data.datasets[0].label = translations[currentLanguage].pnl_performance || 'PNL';
+            chartInstance.update();
+        }
+
+        function copyDonateAddress(event) {
+            event.stopPropagation();
+            const walletAddress = 'q4tqEU7BJ7GNkazQAKci7X1DBPj8jRzWyFpn6TzZBpe';
+            navigator.clipboard.writeText(walletAddress).then(() => {
+                const popup = document.querySelector('.donate-popup');
+                const walletSpan = popup.querySelector('.wallet-address');
+                const originalText = walletSpan.textContent;
+                walletSpan.textContent = translations[currentLanguage].copied || 'Copied!';
+                walletSpan.style.color = '#FFA500';
+                setTimeout(() => {
+                    walletSpan.textContent = originalText;
+                    walletSpan.style.color = '#32CD32';
+                }, 1000);
+            });
+        }
+
+        function updateStatus(status) {
+            const statusDot = document.getElementById('status-dot');
+            statusDot.className = `status-dot ${status}`;
+            statusDot.innerHTML = `
+                <svg class="icon-small" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="12" r="6"/>
+                </svg>
+                ${translations[currentLanguage][status] || translations.en[status]}
+            `;
+            document.getElementById('bot-toggle').checked = status === 'active';
+        }
+
+        async function loadDashboardData() {
+            const userId = localStorage.getItem('userId');
+            if (!userId) return;
+
+            try {
+                const response = await fetch(`/dashboard?userId=${userId}`, { method: 'GET', credentials: 'include' });
+                if (!response.ok) throw new Error('Failed to load dashboard data');
+                const data = await response.json();
+
+                document.getElementById('balance-display').textContent = `${parseFloat(data.balance || 0).toFixed(3)} SOL`;
+                currentPublicKey = data.publicKey || null;
+                document.getElementById('public-key-display').textContent = data.publicKey ? `${data.publicKey.slice(0, 4)}...${data.publicKey.slice(-4)}` : translations[currentLanguage].not_set || 'Not set';
+                document.getElementById('private-key-display').textContent = data.privateKeyPreview || translations[currentLanguage].not_set || 'Not set';
+                document.getElementById('position-size-display').textContent = `${data.positionSize || 25}%`;
+                document.getElementById('success-rate-display').textContent = `${Math.round(data.successRate || 0)} %`;
+                document.getElementById('trades-today-display').textContent = data.tradesToday || 0;
+                document.getElementById('trades-hourly-display').textContent = data.tradesHourly || 0;
+                document.getElementById('total-trades-display').textContent = data.totalTrades || 0;
+
+                updateStatus(data.status || 'inactive');
+
+                document.getElementById('public-key-input').value = data.publicKey ? `${data.publicKey.slice(0, 4)}...${data.publicKey.slice(-4)}` : '';
+                document.getElementById('position-size-input').value = data.positionSize || 25;
+                document.getElementById('slippage-tolerance-input').value = data.slippageTolerance || 2;
+
+                // Validate inputs after loading data
+                validateInputs();
+
+                // Суммируем PNL по дням
+                const pnlDataRaw = data.pnl || [];
+                const pnlByDate = {};
+                pnlDataRaw.forEach(item => {
+                    const date = new Date(item.date).toISOString().split('T')[0];
+                    if (!pnlByDate[date]) {
+                        pnlByDate[date] = 0;
+                    }
+                    pnlByDate[date] += item.value;
+                });
+
+                // Преобразуем в массив для графика (только абсолютные значения для высоты столбцов)
+                const labels = getLast14Days();
+                const today = new Date();
+                const chartData = Array(14).fill(0).map((_, i) => {
+                    const date = new Date(today);
+                    date.setDate(today.getDate() - (13 - i));
+                    const dateStr = date.toISOString().split('T')[0];
+                    const value = pnlByDate[dateStr] || 0;
+                    return { value: Math.abs(value), raw: value };
+                });
+
+                // Обновляем график
+                chartInstance.data.labels = labels;
+                chartInstance.data.datasets[0].data = chartData.map(item => item.value);
+                chartInstance.data.datasets[0].rawData = chartData.map(item => item.raw);
+                chartInstance.data.datasets[0].backgroundColor = chartData.map(item => 
+                    item.raw >= 0 ? 'rgba(46, 125, 50, 0.9)' : 'rgba(211, 47, 47, 0.9)'
+                );
+
+                // Адаптивная шкала Y, только положительная
+                const values = chartData.map(item => item.value);
+                const maxValue = Math.max(...values, 0);
+                if (maxValue > 0) {
+                    const magnitude = Math.pow(10, Math.floor(Math.log10(maxValue)));
+                    const scaleMax = Math.ceil(maxValue / magnitude * 1.2) * magnitude;
+                    chartInstance.options.scales.y.max = scaleMax;
+                    chartInstance.options.scales.y.ticks.stepSize = scaleMax / 5;
+                } else {
+                    chartInstance.options.scales.y.max = 0.0001;
+                    chartInstance.options.scales.y.ticks.stepSize = 0.00002;
+                }
+
+                chartInstance.update();
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        async function toggleBotStatus(checkbox) {
+            const userId = localStorage.getItem('userId');
+            if (!userId || !currentPublicKey) {
+                checkbox.checked = false;
+                updateStatus('inactive');
+                return;
+            }
+
+            const isActive = checkbox.checked;
+            updateStatus('linking');
+
+            try {
+                const response = await fetch('/bot/toggle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, publicKey: currentPublicKey, isActive }),
+                });
+                if (!response.ok) throw new Error('Failed to toggle bot');
+                await loadDashboardData();
+            } catch (error) {
+                console.error('Error toggling bot:', error);
+                checkbox.checked = !isActive;
+                await loadDashboardData();
+            }
+        }
+
+        async function saveWalletSettings() {
+            const userId = localStorage.getItem('userId');
+            if (!userId) return;
+
+            const privateKeyInput = document.getElementById('private-key-input').value.trim();
+            const positionSize = parseFloat(document.getElementById('position-size-input').value);
+            const slippageTolerance = parseFloat(document.getElementById('slippage-tolerance-input').value);
+
+            let settings = {};
+
+            if (privateKeyInput) {
+                const keys = updatePublicKey();
+                if (!keys) return;
+                settings.publicKey = keys.publicKey;
+                settings.privateKey = keys.privateKey;
+            } else if (currentPublicKey) {
+                settings.publicKey = currentPublicKey;
+            }
+
+            settings.positionSize = positionSize;
+            settings.slippageTolerance = slippageTolerance;
+
+            try {
+                const response = await fetch('/wallet/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, ...settings }),
+                });
+                if (!response.ok) throw new Error('Failed to save wallet settings');
+                await loadDashboardData();
+                setActivePage('dash');
+            } catch (error) {
+                console.error('Error saving wallet settings:', error);
+            }
+        }
+
+        async function initializePage() {
+            const isAuthenticated = await checkAuth();
+            if (!isAuthenticated) return;
+
+            document.getElementById('main-content').classList.remove('content-hidden');
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            createChart(savedTheme);
+            setTheme(savedTheme);
+            const savedPage = localStorage.getItem('activePage') || 'dash';
+            setActivePage(savedPage);
+
+            await loadDashboardData();
+
+            // Add event listeners for real-time validation
+            document.getElementById('private-key-input').addEventListener('input', validateInputs);
+            document.getElementById('position-size-input').addEventListener('input', validateInputs);
+            document.getElementById('slippage-tolerance-input').addEventListener('input', validateInputs);
+        }
+
+        initializePage();
+    </script>
+</body>
+</html>
