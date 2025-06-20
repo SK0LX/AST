@@ -1,0 +1,584 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    transition: all 0.3s ease;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+/* Dark theme styles */
+body.dark {
+    background-color: #0a0a0a;
+    color: #e5e7eb;
+}
+body.dark .divider::before,
+body.dark .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: #2d2d2d;
+}
+body.dark .social-button {
+    background-color: #0a0a0a;
+    border: 1px solid #2d2d2d;
+    color: #e5e7eb;
+    flex: 1;
+}
+body.dark .social-button:hover {
+    background-color: #2d2d2d;
+}
+body.dark .email-input {
+    background-color: #0a0a0a;
+    border: 1px solid #2d2d2d;
+    color: #e5e7eb;
+    font-size: 1rem;
+    padding: 0.8rem;
+}
+body.dark .email-input::placeholder {
+    color: #6b7280;
+}
+body.dark .email-button {
+    background-color: #2d2d2d;
+    color: #6b7280;
+    cursor: not-allowed;
+    font-size: 1rem;
+    padding: 0.9rem;
+}
+body.dark .email-button.enabled {
+    background-color: #ffffff;
+    color: #000000;
+    cursor: pointer;
+}
+body.dark .email-button.enabled:hover {
+    background-color: #e5e5e5;
+}
+body.dark .logo {
+    color: #ffffff;
+}
+body.dark .description {
+    color: #9ca3af;
+}
+body.dark .divider {
+    color: #6b7280;
+}
+body.dark .label {
+    color: #9ca3af;
+}
+body.dark .otp-modal {
+    background-color: #1a1a1a;
+    border: 1px solid #2d2d2d;
+}
+body.dark .otp-input {
+    background-color: #1a1a1a;
+    border: 0.5px solid #2d2d2d;
+    color: #e5e7eb;
+}
+body.dark .otp-input.success {
+    border: 2px solid #32CD32;
+}
+body.dark .otp-input.error {
+    border: 2px solid #EF4444;
+}
+body.dark .otp-signin-button {
+    background-color: #2d2d2d;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+body.dark .otp-signin-button.enabled {
+    background-color: #ffffff;
+    color: #000000;
+    cursor: pointer;
+}
+body.dark .otp-signin-button.enabled:hover {
+    background-color: #e5e5e5;
+}
+body.dark .otp-back {
+    color: #e5e7eb;
+}
+body.dark .otp-email {
+    color: #ffffff;
+}
+body.dark .otp-resend {
+    color: #9ca3af;
+}
+body.dark .otp-resend.active {
+    color: #ffffff;
+    text-decoration: underline;
+}
+body.dark .error-message {
+    color: #EF4444;
+}
+body.dark .terms-link {
+    color: #b8bfcc;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    margin-bottom: 0.1rem;
+}
+
+/* Light theme styles */
+body.light {
+    background-color: #ffffff;
+    color: #000000;
+}
+body.light .divider::before,
+body.light .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: #e5e7eb;
+}
+body.light .social-button {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    color: #000000;
+    flex: 1;
+}
+body.light .social-button:hover {
+    background-color: #f3f4f6;
+}
+body.light .email-input {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    color: #000000;
+    font-size: 1rem;
+    padding: 0.8rem;
+}
+body.light .email-input::placeholder {
+    color: #9ca3af;
+}
+body.light .email-button {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+    font-size: 1rem;
+    padding: 0.9rem;
+}
+body.light .email-button.enabled {
+    background-color: #000000;
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+}
+body.light .email-button.enabled:hover {
+    background-color: #333333;
+}
+body.light .logo {
+    color: #000000;
+}
+body.light .description {
+    color: #6b7280;
+}
+body.light .divider {
+    color: #9ca3af;
+}
+body.light .label {
+    color: #6b7280;
+}
+body.light .otp-modal {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+}
+body.light .otp-input {
+    background-color: #ffffff;
+    border: 0.5px solid #e5e7eb;
+    color: #000000;
+}
+body.light .otp-input.success {
+    border: 2px solid #32CD32;
+}
+body.light .otp-input.error {
+    border: 2px solid #EF4444;
+}
+body.light .otp-signin-button {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+body.light .otp-signin-button.enabled {
+    background-color: #000000;
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+}
+body.light .otp-signin-button.enabled:hover {
+    background-color: #333333;
+}
+body.light .otp-back {
+    color: #000000;
+}
+body.light .otp-email {
+    color: #000000;
+}
+body.light .otp-resend {
+    color: #6b7280;
+}
+body.light .otp-resend.active {
+    color: #000000;
+    text-decoration: underline;
+}
+body.light .error-message {
+    color: #EF4444;
+}
+body.light .terms-link {
+    color: #6b7280;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    margin-bottom: 0.1rem;
+}
+
+/* Common styles */
+.top-bar {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    right: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.top-bar-right {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.theme-toggle, .language-toggle {
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.6rem;
+    border-radius: 0.25rem;
+    transition: all 0.3s ease;
+}
+
+body.dark .theme-toggle, body.dark .language-toggle {
+    background-color: #2d2d2d;
+}
+
+body.light .theme-toggle, body.light .language-toggle {
+    background-color: #f3f4f6;
+}
+
+.theme-toggle:hover, .language-toggle:hover {
+    opacity: 0.8;
+}
+
+body.dark .theme-toggle svg, body.dark .language-toggle span {
+    fill: #ffffff;
+    color: #ffffff;
+}
+
+body.light .language-toggle span {
+    color: #000000;
+}
+
+.main-content {
+    max-width: 24rem;
+    width: 100%;
+    text-align: center;
+    transition: filter 0.3s ease;
+}
+
+.main-content.blurred {
+    filter: blur(4px);
+}
+
+h2 {
+    font-size: 1.875rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.description {
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+}
+
+.social-buttons {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.social-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.8rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.3s ease;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.github-icon {
+    width: 1rem;
+    height: 1rem;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+}
+
+.form-group {
+    margin-bottom: 0.75rem;
+    text-align: left;
+}
+
+.label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.1rem;
+}
+
+.email-input {
+    width: 100%;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    outline: none;
+    border: 1px solid;
+}
+
+.email-input:focus {
+    box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.5);
+}
+
+.email-button {
+    width: 100%;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+    margin-top: 0.5rem;
+}
+
+.error-message {
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    display: none;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.custom-checkbox {
+    appearance: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid #000000;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+body.dark .custom-checkbox {
+    border: 2px solid #e5e7eb;
+}
+
+.custom-checkbox:checked {
+    background-color: #000000;
+    border-color: #000000;
+    position: relative;
+}
+
+body.dark .custom-checkbox:checked {
+    background-color: #ffffff;
+    border-color: #ffffff;
+}
+
+.custom-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0.5rem;
+    height: 0.75rem;
+    border: solid #ffffff;
+    border-width: 0 2px 2px 0;
+    transform: translate(-50%, -60%) rotate(45deg);
+}
+
+body.light .custom-checkbox:checked::after {
+    border-color: #ffffff;
+}
+
+body.dark .custom-checkbox:checked::after {
+    border-color: #000000;
+}
+
+/* OTP Modal styles */
+.otp-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.otp-overlay.visible {
+    opacity: 1;
+}
+
+.otp-overlay.hidden {
+    display: none;
+}
+
+.otp-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 24rem;
+    z-index: 50;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#terms-modal {
+    width: 32rem;
+    max-width: 95%;
+}
+
+.otp-modal.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.otp-modal.hidden {
+    display: none;
+}
+
+.otp-header {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.otp-back {
+    position: absolute;
+    left: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.otp-input-group {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.otp-input {
+    width: 3rem;
+    height: 3rem;
+    text-align: center;
+    font-size: 1.125rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.otp-signin-button {
+    position: relative;
+    width: 100%;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s ease;
+    border: none;
+    margin-top: 1rem;
+}
+
+.otp-signin-button svg {
+    position: absolute;
+    right: 1rem;
+}
+
+.otp-resend {
+    font-size: 0.875rem;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.otp-email {
+    font-weight: 600;
+}
+
+.otp-message {
+    text-align: center;
+    margin-bottom: 1rem;
+    display: none;
+}
+
+.icon {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.logo-icon {
+    width: 2rem;
+    height: 2rem;
+}
+
+.terms-content {
+    max-height: 18rem;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    line-height: 1.5;
+}
