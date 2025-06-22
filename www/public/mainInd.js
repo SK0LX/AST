@@ -77,7 +77,6 @@ function updatePublicKey() {
 
 let currentPublicKey = null;
 
-// Language translations
 const translations = {
     en: {
         dashboard: "Dashboard",
@@ -181,7 +180,7 @@ const translations = {
         core_objective_description: "AST автоматизирует процесс снайпинга новых токенов на Solana, сканируя блокчейн в реальном времени и используя модель ML для прогнозирования потенциала токенов, обеспечивая быстрые и эффективные действия пользователей.",
         architecture: "Архитектура",
         blockchain_scanner: "<strong>Сканер блокчейна:</strong> Серверный скрипт непрерывно сканирует блокчейн Solana через API-запросы к узлам, обнаруживая новые запуски токенов.",
-        ML_model: "<strong>Модель ML:</strong> Интегрированная модель машинного обучения фильтрует токены на основе их потенциала для положительного математического ожидания, приоритизируя возможности с высокой ценностью.",
+        ml_model: "<strong>Модель ML:</strong> Интегрированная модель машинного обучения фильтрует токены на основе их потенциала для положительного математического ожидания, приоритизируя возможности с высокой ценностью.",
         user_interfaces: "<strong>Пользовательские интерфейсы:</strong> Доступ к AST через веб-приложение, приложение для Android или мини-приложение Telegram, обеспечивая гибкость и удобство.",
         user_access_workflow: "Доступ и рабочий процесс пользователя",
         authorization: "<strong>Авторизация:</strong> Пользователи входят в систему, чтобы получить доступ к панели управления, отображающей журналы торгов, балансы кошельков и активность по снайпингу.",
@@ -219,7 +218,6 @@ function updateContent() {
     document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
         const translation = translations[currentLanguage][key] || translations.en[key];
-        // Check if the translation contains HTML tags
         if (translation.includes('<') && translation.includes('>')) {
             element.innerHTML = translation;
         } else {
@@ -230,10 +228,8 @@ function updateContent() {
         const key = element.getAttribute('data-i18n-placeholder');
         element.placeholder = translations[currentLanguage][key] || translations.en[key];
     });
-    // Update page title dynamically
     const activePage = localStorage.getItem('activePage') || 'dash';
     document.getElementById('page-title').textContent = translations[currentLanguage][activePage] || translations.en[activePage];
-    // Update status dot text
     const statusDot = document.getElementById('status-dot');
     const status = statusDot.classList.contains('active') ? 'active' : statusDot.classList.contains('linking') ? 'linking' : 'inactive';
     statusDot.innerHTML = `
@@ -251,8 +247,6 @@ function validateInputs() {
     const saveButton = document.getElementById('save-settings-button');
 
     let isValid = true;
-
-    // Validate Private Key
     if (privateKeyInput) {
         const keys = updatePublicKey();
         if (!keys) {
@@ -270,7 +264,6 @@ function validateInputs() {
         }
     }
 
-    // Validate Position Size
     if (document.getElementById('position-size-input').value === '' || isNaN(positionSize) || positionSize < 2 || positionSize > 50) {
         document.getElementById('position-size-error').textContent = translations[currentLanguage].position_size_error || 'Position Size must be between 2% and 50%.';
         document.getElementById('position-size-error').classList.remove('hidden');
@@ -279,7 +272,6 @@ function validateInputs() {
         document.getElementById('position-size-error').classList.add('hidden');
     }
 
-    // Validate Slippage Tolerance
     if (document.getElementById('slippage-tolerance-input').value === '' || isNaN(slippageTolerance) || slippageTolerance < 1 || slippageTolerance > 10) {
         document.getElementById('slippage-tolerance-error').textContent = translations[currentLanguage].slippage_tolerance_error || 'Slippage Tolerance must be between 1% and 10%.';
         document.getElementById('slippage-tolerance-error').classList.remove('hidden');
@@ -464,7 +456,7 @@ function updateChartColors(theme) {
     chartInstance.options.scales.x.ticks.color = tickColor;
     chartInstance.options.scales.y.ticks.color = tickColor;
     chartInstance.options.scales.y.grid.color = gridColor;
-    chartInstance.data.labels = getLast14Days(); // Update labels for language
+    chartInstance.data.labels = getLast14Days();
     chartInstance.data.datasets[0].label = translations[currentLanguage].pnl_performance || 'PNL';
     chartInstance.update();
 }
@@ -522,10 +514,8 @@ async function loadDashboardData() {
         document.getElementById('position-size-input').value = data.positionSize || 25;
         document.getElementById('slippage-tolerance-input').value = data.slippageTolerance || 2;
 
-        // Validate inputs after loading data
         validateInputs();
 
-        // Суммируем PNL по дням
         const pnlDataRaw = data.pnl || [];
         const pnlByDate = {};
         pnlDataRaw.forEach(item => {
@@ -536,7 +526,6 @@ async function loadDashboardData() {
             pnlByDate[date] += item.value;
         });
 
-        // Преобразуем в массив для графика (только абсолютные значения для высоты столбцов)
         const labels = getLast14Days();
         const today = new Date();
         const chartData = Array(14).fill(0).map((_, i) => {
@@ -547,7 +536,6 @@ async function loadDashboardData() {
             return { value: Math.abs(value), raw: value };
         });
 
-        // Обновляем график
         chartInstance.data.labels = labels;
         chartInstance.data.datasets[0].data = chartData.map(item => item.value);
         chartInstance.data.datasets[0].rawData = chartData.map(item => item.raw);
@@ -555,7 +543,6 @@ async function loadDashboardData() {
             item.raw >= 0 ? 'rgba(46, 125, 50, 0.9)' : 'rgba(211, 47, 47, 0.9)'
         );
 
-        // Адаптивная шкала Y, только положительная
         const values = chartData.map(item => item.value);
         const maxValue = Math.max(...values, 0);
         if (maxValue > 0) {
@@ -649,7 +636,6 @@ async function initializePage() {
 
     await loadDashboardData();
 
-    // Add event listeners for real-time validation
     document.getElementById('private-key-input').addEventListener('input', validateInputs);
     document.getElementById('position-size-input').addEventListener('input', validateInputs);
     document.getElementById('slippage-tolerance-input').addEventListener('input', validateInputs);
