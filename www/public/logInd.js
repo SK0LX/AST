@@ -18,7 +18,6 @@ const languageText = document.getElementById('language-text');
 let timerSeconds = 120;
 let timerInterval;
 
-// Language translations
 const translations = {
     en: {
         login: "Log in",
@@ -103,11 +102,11 @@ function updateContent() {
         } else {
             element.textContent = translations[currentLanguage][key] || translations.en[key];
         }
-        // Handle special case for otp_description
+
         if (key === 'otp_description') {
             element.innerHTML = `${translations[currentLanguage][key]} <span id="otp-email" class="otp-email"></span>`;
         }
-        // Handle special case for resend link
+
         if (key === 'resend') {
             element.innerHTML = `${translations[currentLanguage][key]} (<span id="resend-timer">1:00</span>)`;
         }
@@ -245,7 +244,6 @@ function moveToNext(current, nextIndex) {
 }
 
 function startResendTimer() {
-    // Очищаем предыдущий интервал, если он существует
     if (timerInterval) {
         clearInterval(timerInterval);
     }
