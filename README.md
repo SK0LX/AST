@@ -1,95 +1,138 @@
-# AST: sniper bot 
+# AST — Sniper Bot
 
-## Idea  
-AutoGraph is a tool for automatic token sniping with filtering before purchase.  
+Торговый бот для pump.fun в сети Solana: слушает появление новых токенов,
+прогоняет их через фильтры и совершает сделку раньше, чем это успел бы сделать
+человек. Управление — через веб-панель, Telegram или Android-приложение.
 
-## Features  
+![Python](https://img.shields.io/badge/Python-asyncio-3776AB?style=flat-square&logo=python&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-Express-339933?style=flat-square&logo=nodedotjs&logoColor=white)
+![Solana](https://img.shields.io/badge/Solana-web3-9945FF?style=flat-square&logo=solana&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-OTP-DC382D?style=flat-square&logo=redis&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-Android-7F52FF?style=flat-square&logo=kotlin&logoColor=white)
 
-- **Monitoring** — tracks new tokens in real time.  
-- **Filtering** — blacklist, price limits, and transaction limits.  
-- **Automation** — buy, hold, and sell based on strategy.  
-- **Notifications** — Telegram, Android app.  
-- **Logging** — analyzes trade efficiency.  
+> ⚠️ Проект исследовательский. Торговля на пампах — крайне рискованное занятие,
+> потерять депозит здесь проще, чем заработать. Код опубликован как пример
+> архитектуры, а не как инвестиционная рекомендация.
 
-## Architecture  
+## Как работает
 
-### Core (JavaScript)  
-- Processes incoming token streams.  
-- Sends data for filtering.  
-- Stores results in PostgreSQL.  
+```
+   pump.fun (WebSocket)
+          │  новые минты, покупки, миграции
+          ▼
+   ┌─────────────┐    не прошёл     ┌──────────┐
+   │   Фильтры   │─────────────────▶│  отбой   │
+   │ blacklist,  │                  └──────────┘
+   │ лимиты цены │
+   └──────┬──────┘
+          │ прошёл
+          ▼
+   ┌─────────────┐      сделка      ┌──────────────┐
+   │   Trader    │─────────────────▶│    Solana    │
+   │  asyncio    │◀─────────────────│              │
+   └──────┬──────┘     результат    └──────────────┘
+          │
+          ▼
+   PostgreSQL (PnL, история)  ──▶  Веб-панель · Telegram · Android
+```
 
-### Web Admin Panel (JavaScript)  
-- Moderation interface: accept, reject, edit.  
-- Settings: data sources, filtering.  
+Бот держит постоянное WebSocket-соединение и реагирует на события в реальном
+времени. Каждый пользователь торгует со своим кошельком и своими лимитами —
+`trade_wrapper` изолирует сделку конкретного пользователя, а балансы и статистика
+синхронизируются отдельными фоновыми задачами.
 
-### Telegram Bot (Python)  
-- Management via commands and buttons.  
+## Компоненты
 
-### Mathematical Statistics (Python)  
-- Trade analysis.  
-- Strategy efficiency evaluation.  
+| Каталог | Стек | Назначение |
+|---|---|---|
+| `script/` | Python, asyncio, asyncpg | Ядро: WebSocket, сделки, PnL, синхронизация кошельков |
+| `script-stats/`, `script-stats-SE/` | Python | Сбор и разбор статистики сделок, оценка стратегий |
+| `www/` | Node.js, Express, WebSocket | Веб-панель: авторизация, кошельки, дашборд, запуск бота |
+| `AST/` | Kotlin, Retrofit | Android-приложение: уведомления и мониторинг |
+| `db/` | Docker Compose | PostgreSQL, Redis, pgAdmin, Redis Commander |
 
-### Android App (Kotlin)  
-- Notifications.  
-- Monitoring.  
+### Ядро
 
-### Database (PostgreSQL)  
-- Stores token and transaction data.  
-- Logs user actions.  
-- Filtering metadata.  
+```python
+async def trade_wrapper(user_wallet, pool, trade_history): ...
+async def update_balances(pool): ...
+async def sync_wallet_store(pool): ...
+async def handle_websocket(websocket, pool): ...
+```
 
-## Roadmap  
+Всё асинхронно: пока одна сделка ждёт подтверждения в сети, обрабатываются
+остальные события. Подпись транзакций — через `solders`, ключ пользователя
+загружается в память только на время сделки.
 
-- **MVP** — launch with basic filtering.  
-- **Further development** — liquidity analysis, scam protection.
+### Веб-панель
 
-# pump_fun_py
+Express + PostgreSQL + Redis. Вход по одноразовому коду (OTP хранится в Redis
+с TTL), сессии, добавление кошелька, включение и выключение бота, дашборд с
+текущими позициями. Реальное время — через WebSocket.
 
-Python library to trade on pump.fun. 
+### Android
 
-Updated: 1/24/2025
+Retrofit-клиент к той же панели, фоновый сервис и push-уведомления о сделках.
 
-solana Version: 0.36.1
+## Безопасность ключей
 
-solders Version: 0.23.0
+Приватный ключ кошелька **не хранится в репозитории и не попадает в базу целиком**.
+В PostgreSQL пишется только превью — последние 4 символа (`private_key_preview`),
+чтобы пользователь мог отличить свои кошельки. Полный ключ живёт в рантайме
+процесса-трейдера.
 
-Clone the repo, and add your Private Key (Base58 string) and RPC to the config.py.
+## Развёртывание
 
+**1. Инфраструктура:**
 
-### Contact
+```bash
+cd db && docker compose up -d
+```
 
--PF Token Launchers (Bundler or Self-Sniper)
+Поднимутся PostgreSQL, Redis и веб-интерфейсы к ним. Схема базы — на
+[ERD](db/ERD.jpg), описание — в [db/db.md](db/db.md).
 
--Bump Bot
+**2. Веб-панель:**
 
--gRPC Detection (Mints, Buys, Migrations)
+```bash
+cd www && npm install && npm start
+```
 
--Vanity Address Generator
+**3. Ядро бота:**
 
--Rust implementations of PF code
+```bash
+cd script/pump_fun_py
+pip install -r requirements.txt
+python trade_manager.py
+```
 
+Понадобится собственный RPC-эндпоинт — публичная mainnet-нода не выдерживает
+нагрузки и роняет транзакции.
 
-### FAQS
+## Структура
 
-**What format should my private key be in?** 
+```
+AST/
+├── script/pump_fun_py/     # ядро: trade_manager, trade_service
+├── script-stats/           # статистика сделок
+├── script-stats-SE/        # вариант со стратегией SE
+├── script-def/             # базовая конфигурация
+├── www/                    # веб-панель
+│   ├── src/                # index.js, auth.js, db.js
+│   └── public/             # login.html, main.html, wallet.js
+├── AST/                    # Android-приложение
+└── db/                     # docker-compose, ERD, описание схемы
+```
 
-The private key should be in the base58 string format, not bytes. 
+## Планы
 
-**Why are my transactions being dropped?** 
+- Анализ ликвидности перед входом
+- Защита от скам-контрактов
+- Разбор эффективности стратегий на исторических данных
 
-You get what you pay for. Don't use the main-net RPC, just spend the money for Helius or Quick Node.
+## Зависимости
 
-**How do I change the fee?** 
-
-Modify the UNIT_BUDGET and UNIT_PRICE in the config.py. 
-
-**Does this code work on devnet?**
-
-No. 
-
-
-## Why It Works  
-
-- Faster and more accurate than manual trading.  
-- Filters reduce risks.  
-- Statistics help adapt strategy.  
+Взаимодействие с pump.fun построено на библиотеке
+[`pump_fun_py`](https://github.com/1f1n/pump_fun_py) — она вендорится в каталогах
+`script*` и адаптирована под многопользовательский сценарий.
